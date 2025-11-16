@@ -12,6 +12,10 @@ interface Assistant {
   role: string;
   created_at: string;
   updated_at: string;
+  year?: number;
+  rating?: number;
+  courses?: string[];
+  available?: boolean;
 }
 
 interface Course {
@@ -138,34 +142,47 @@ export default function CourseDetailsModal({
                 </p>
               </Card>
             ) : (
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <div className="space-y-4">
                 {assistants.map((assistant) => (
                   <Card key={assistant.id} className="p-6">
-                    <div className="flex items-start justify-between mb-4">
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-900">
-                          {assistant.name}
-                        </h3>
-                        <p className="text-sm text-gray-600">
-                          {assistant.email}
-                        </p>
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <div className="flex items-start justify-between mb-3">
+                          <div>
+                            <h3 className="font-semibold text-lg">{assistant.name}</h3>
+                            <p className="text-sm text-gray-600">Year {assistant.year || 3}</p>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <span className="text-yellow-500">★</span>
+                            <span className="font-medium">{assistant.rating || 4.5}</span>
+                          </div>
+                        </div>
+                        
+                        <div className="mb-4">
+                          <p className="text-sm text-gray-600 mb-2">Courses:</p>
+                          <div className="flex flex-wrap gap-2">
+                            {(assistant.courses || ['Math101', 'CS102']).map((course) => (
+                              <span key={course} className="text-sm bg-blue-100 text-blue-800 px-3 py-1 rounded">
+                                {course}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="ml-6 flex flex-col items-end gap-3">
+                        <span className={`text-sm font-medium ${(assistant.available !== false) ? 'text-green-600' : 'text-red-600'}`}>
+                          {(assistant.available !== false) ? 'Available' : 'Busy'}
+                        </span>
+                        <Button
+                          onClick={() => handleConnect(assistant.id)}
+                          disabled={assistant.available === false}
+                          className="bg-green-600 hover:bg-green-700 min-w-[120px]"
+                        >
+                          Request Help
+                        </Button>
                       </div>
                     </div>
-
-                    <div className="mb-4">
-                      <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
-                        {assistant.role === "assistant"
-                          ? "Teaching Assistant"
-                          : assistant.role}
-                      </span>
-                    </div>
-
-                    <Button
-                      onClick={() => handleConnect(assistant.id)}
-                      className="w-full"
-                    >
-                      Connect with Assistant
-                    </Button>
                   </Card>
                 ))}
               </div>
