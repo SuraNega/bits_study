@@ -1,6 +1,8 @@
 class User < ApplicationRecord
     has_secure_password
 
+    attr_accessor :current_password
+
     # used to define the assistant and their courses
     has_many :assistant_courses, foreign_key: :assistant_id
     has_many :courses, through: :assistant_courses, source: :course
@@ -19,7 +21,16 @@ class User < ApplicationRecord
     validates :email, uniqueness: true
     validates :role, presence: true, inclusion: { in: %w[ user assistant ] }
     validates :academic_year, presence: true
-    validates :password, presence: true, length: { minimum: 8 }
+    validates :password, presence: true, length: { minimum: 8 }, on: :create
+    validate :current_password_must_be_correct, if: -> { password.present? && persisted? }
+
+    def current_password_must_be_correct
+      return if current_password.blank?
+      old_digest = password_digest_was
+      unless old_digest && BCrypt::Password.new(old_digest) == current_password
+        errors.add(:current_password, "is incorrect")
+      end
+    end
 
     def assistant?
         role == "assistant"

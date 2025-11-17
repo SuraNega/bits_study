@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/navigation-menu';
 import { useAuthModal } from '@/components/context/AuthModalContext';
 import { useAuth } from '@/components/context/AuthContext';
+import ProfileModal from '@/components/auth/ProfileModal';
 
 const navigation = [
   { name: 'Home', href: '/' },
@@ -64,6 +65,7 @@ export function Navbar() {
             {user ? (
               <>
                 <span className="text-gray-700 font-medium">Hi, {user.name || user.email}</span>
+                <ProfileModal />
                 <Button
                   variant="outline"
                   onClick={() => { logout(); navigate('/'); }}

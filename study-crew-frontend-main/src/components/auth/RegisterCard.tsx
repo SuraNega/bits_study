@@ -15,6 +15,7 @@ const formSchema = z.object({
   password: z.string().min(8, { message: 'Password must be at least 8 characters.' }),
   role: z.enum(['user', 'assistant'], { message: 'Please select a role.' }),
   academic_year: z.number().min(1).max(4, { message: 'Academic year must be between 1 and 4.' }),
+  telegram_username: z.string().optional(),
 }).refine((data) => {
   if (data.role === 'assistant') {
     return data.academic_year > 1;
@@ -36,6 +37,7 @@ export default function RegisterCard() {
       password: '',
       role: 'user',
       academic_year: 1,
+      telegram_username: '',
     },
   });
   const { openModal, closeModal } = useAuthModal();
@@ -55,6 +57,7 @@ export default function RegisterCard() {
             password_confirmation: values.password,
             role: values.role,
             academic_year: values.academic_year,
+            telegram_username: values.telegram_username || null,
           },
         }),
       });
@@ -144,6 +147,15 @@ export default function RegisterCard() {
                     <SelectItem value="4">4th Year</SelectItem>
                   </SelectContent>
                 </Select>
+                <FormMessage />
+              </FormItem>
+            )} />
+            <FormField name="telegram_username" control={form.control} render={({ field }) => (
+              <FormItem>
+                <FormLabel>Telegram Username (Optional)</FormLabel>
+                <FormControl>
+                  <Input placeholder="@yourtelegram" {...field} />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )} />

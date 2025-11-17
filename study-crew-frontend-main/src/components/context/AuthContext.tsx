@@ -7,6 +7,7 @@ interface AuthContextType {
   role: UserRole;
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
+  updateUser: (updatedUser: any) => void;
   loading: boolean;
   error: string | null;
 }
@@ -69,8 +70,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Optionally: call /logout endpoint
   };
 
+  const updateUser = (updatedUser: any) => {
+    setUser(updatedUser);
+    localStorage.setItem("user", JSON.stringify(updatedUser));
+  };
+
   return (
-    <AuthContext.Provider value={{ user, role, login, logout, loading, error }}>
+    <AuthContext.Provider value={{ user, role, login, logout, updateUser, loading, error }}>
       {children}
     </AuthContext.Provider>
   );
