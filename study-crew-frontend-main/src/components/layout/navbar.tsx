@@ -64,7 +64,18 @@ export function Navbar() {
           <div className="flex flex-1 items-center justify-end space-x-4">
             {user ? (
               <>
-                <span className="text-gray-700 font-medium">Hi, {user.name || user.email}</span>
+                <span className="text-gray-700 font-medium flex items-center gap-2">
+                  Hi, {user.name || user.email}
+                  {role === 'assistant' && user.activity_status && (
+                    <span
+                      className={`inline-block w-2 h-2 rounded-full ${
+                        user.activity_status === 'available' ? 'bg-green-500' :
+                        user.activity_status === 'busy' ? 'bg-yellow-500' :
+                        user.activity_status === 'not available' ? 'bg-red-500' : ''
+                      }`}
+                    ></span>
+                  )}
+                </span>
                 <ProfileModal />
                 <Button
                   variant="outline"

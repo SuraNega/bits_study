@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_11_19_045618) do
+ActiveRecord::Schema[8.0].define(version: 2025_11_19_073120) do
   create_table "assistantcourses", force: :cascade do |t|
     t.integer "assistant_id", null: false
     t.integer "course_id", null: false
@@ -66,6 +66,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_19_045618) do
     t.integer "academic_year"
     t.string "telegram_username"
     t.text "bio"
+    t.string "activity_status"
   end
 
   add_foreign_key "assistantcourses", "courses"

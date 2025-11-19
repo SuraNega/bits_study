@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/components/context/AuthContext';
 import { useState, useEffect } from 'react';
 import { User } from 'lucide-react';
@@ -15,6 +16,7 @@ const formSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
   telegram_username: z.string().optional(),
   bio: z.string().max(70, { message: 'Bio must be at most 70 characters.' }).optional(),
+  activity_status: z.string().optional(),
 });
 
 export default function ProfileModal() {
@@ -23,7 +25,7 @@ export default function ProfileModal() {
   const [success, setSuccess] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
-  const { user, updateUser } = useAuth();
+  const { user, role, updateUser } = useAuth();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -31,6 +33,7 @@ export default function ProfileModal() {
       name: user?.name || '',
       telegram_username: user?.telegram_username || '',
       bio: user?.bio || '',
+      activity_status: user?.activity_status || '',
     },
   });
 
@@ -44,6 +47,7 @@ export default function ProfileModal() {
         name: user.name || '',
         telegram_username: user.telegram_username || '',
         bio: user.bio || '',
+        activity_status: user.activity_status || '',
       });
     }
   }, [user, form]);
@@ -68,6 +72,12 @@ export default function ProfileModal() {
       const newBio = values.bio || '';
       if (newBio !== currentBio) {
         updateData.bio = newBio || null;
+      }
+
+      const currentActivityStatus = user?.activity_status || '';
+      const newActivityStatus = values.activity_status || '';
+      if (newActivityStatus !== currentActivityStatus) {
+        updateData.activity_status = newActivityStatus || null;
       }
 
       const hasChanges = Object.keys(updateData).length > 0;
@@ -147,6 +157,26 @@ export default function ProfileModal() {
                 <FormMessage />
               </FormItem>
             )} />
+            {role === 'assistant' && (
+              <FormField name="activity_status" control={form.control} render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Activity Status</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select your status" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="available">Available</SelectItem>
+                      <SelectItem value="busy">Busy</SelectItem>
+                      <SelectItem value="not available">Not Available</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )} />
+            )}
             {error && <p className="text-red-500 text-sm">{error}</p>}
             {success && <p className="text-green-600 text-sm">{success}</p>}
             <div className="flex space-x-2">
