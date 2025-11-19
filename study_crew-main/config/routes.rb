@@ -16,17 +16,13 @@ Rails.application.routes.draw do
   resources :connections
   resources :courses
   resources :assistant_courses
-  resources :available_times
-
+  resources :assistant_courses
+  
   # Custom routes for assistant_courses
   get "/assistant_courses/by_assistant/:assistant_id", to: "assistant_courses#by_assistant"
   get "/assistant_courses/by_course/:course_id", to: "assistant_courses#by_course"
   get "/assistant_courses/assignment_details/:assistant_id/:course_id", to: "assistant_courses#assignment_details"
   post "/assistant_courses/bulk_update_with_availability", to: "assistant_courses#bulk_update_with_availability"
-
-  # Custom routes for available_times
-  get "/available_times/by_assistant/:assistant_id", to: "available_times#by_assistant"
-  post "/available_times/bulk_create", to: "available_times#bulk_create"
 
   post "/login", to: "sessions#create"
   delete "/logout", to: "sessions#destroy"

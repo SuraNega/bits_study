@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_11_19_073120) do
+ActiveRecord::Schema[8.0].define(version: 2025_11_19_082131) do
   create_table "assistantcourses", force: :cascade do |t|
     t.integer "assistant_id", null: false
     t.integer "course_id", null: false
@@ -19,17 +19,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_19_073120) do
     t.time "assigned_time"
     t.index ["assistant_id"], name: "index_assistantcourses_on_assistant_id"
     t.index ["course_id"], name: "index_assistantcourses_on_course_id"
-  end
-
-  create_table "available_times", force: :cascade do |t|
-    t.integer "assistant_id", null: false
-    t.integer "course_id", null: false
-    t.string "day", null: false
-    t.time "start_time", null: false
-    t.time "end_time", null: false
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["assistant_id", "course_id"], name: "index_available_times_on_assistant_id_and_course_id"
   end
 
   create_table "connections", force: :cascade do |t|
@@ -71,8 +60,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_19_073120) do
 
   add_foreign_key "assistantcourses", "courses"
   add_foreign_key "assistantcourses", "users", column: "assistant_id"
-  add_foreign_key "available_times", "courses"
-  add_foreign_key "available_times", "users", column: "assistant_id"
   add_foreign_key "connections", "users"
   add_foreign_key "connections", "users", column: "assistant_id"
 end
