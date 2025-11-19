@@ -25,6 +25,7 @@ interface ChangePasswordModalProps {
 export default function ChangePasswordModal({ open, onOpenChange }: ChangePasswordModalProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const { user } = useAuth();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -39,10 +40,12 @@ export default function ChangePasswordModal({ open, onOpenChange }: ChangePasswo
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setLoading(true);
     setError(null);
+    setSuccess(null);
     try {
       const res = await fetch(`http://localhost:3000/users/${user.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           user: {
             password: values.password,
@@ -57,7 +60,7 @@ export default function ChangePasswordModal({ open, onOpenChange }: ChangePasswo
         throw new Error(errorData.errors?.join(', ') || 'Password update failed');
       }
 
-      onOpenChange(false);
+      setSuccess('Password updated successfully!');
       form.reset();
     } catch (err: any) {
       setError(err.message || 'Password update failed');
@@ -100,9 +103,16 @@ export default function ChangePasswordModal({ open, onOpenChange }: ChangePasswo
               </FormItem>
             )} />
             {error && <p className="text-red-500 text-sm">{error}</p>}
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? 'Updating...' : 'Update Password'}
-            </Button>
+            {success && <p className="text-green-600 text-sm">{success}</p>}
+            {success ? (
+              <Button type="button" className="w-full" onClick={() => { onOpenChange(false); setSuccess(null); }}>
+                Close
+              </Button>
+            ) : (
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? 'Updating...' : 'Update Password'}
+              </Button>
+            )}
           </form>
         </Form>
       </DialogContent>
