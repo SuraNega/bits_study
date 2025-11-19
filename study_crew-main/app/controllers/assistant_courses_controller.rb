@@ -104,11 +104,13 @@ class AssistantCoursesController < ApplicationController
   def bulk_update_with_availability
     assistant_id = params[:assistant_id]
     course_ids = params[:course_ids] || []
+    special_course_codes = params[:special_course_codes] || []
 
     # Debug logging
     Rails.logger.info "bulk_update_with_availability called with:"
     Rails.logger.info "assistant_id: #{assistant_id}"
     Rails.logger.info "course_ids: #{course_ids}"
+    Rails.logger.info "special_course_codes: #{special_course_codes}"
 
     # Validate assistant
     assistant = User.find_by(id: assistant_id)
@@ -158,10 +160,20 @@ class AssistantCoursesController < ApplicationController
 
         ac = AssistantCourse.new(
           assistant_id: assistant_id,
-          course_id: course.id
+          course_id: course.id,
+          special: special_course_codes.include?(course_code)
         )
         ac.save!
         added_assignments << ac
+      end
+
+      # Update special status for existing assignments
+      currently_assigned.each do |assignment|
+        course_code = assignment.course.code
+        should_be_special = special_course_codes.include?(course_code)
+        if assignment.special != should_be_special
+          assignment.update!(special: should_be_special)
+        end
       end
 
       render json: {
@@ -234,6 +246,12 @@ class AssistantCoursesController < ApplicationController
       @assistant_courses = AssistantCourse.includes(:assistant).where(course_id: params[:course_id])
       render json: @assistant_courses.as_json(include: [ :assistant ])
     end
+  end
+
+  # GET /assistant_courses/special
+  def special
+    @special_courses = AssistantCourse.includes(:assistant, :course).where(special: true)
+    render json: @special_courses.as_json(include: [ :assistant, :course ])
   end
 
   private

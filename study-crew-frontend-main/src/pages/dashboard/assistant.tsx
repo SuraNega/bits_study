@@ -65,6 +65,9 @@ export default function AssistantDashboard() {
   const [assignedCourses, setAssignedCourses] = useState<Set<string>>(
     new Set()
   );
+  const [specialCourses, setSpecialCourses] = useState<Set<string>>(
+    new Set()
+  );
   const [hasChanges, setHasChanges] = useState(false);
 
   useEffect(() => {
@@ -95,14 +98,27 @@ export default function AssistantDashboard() {
        })
        .then((data) => {
          const assignedCodes = data.map((ac: any) => ac.course.code as string);
+         const specialCodes = data.filter((ac: any) => ac.special).map((ac: any) => ac.course.code as string);
          setAssignedCourses(new Set(assignedCodes));
          setSelectedCourses(new Set(assignedCodes)); // Initialize selected with assigned
+         setSpecialCourses(new Set(specialCodes));
        })
        .catch((err) => console.error("Failed to fetch assigned courses:", err));
    }, [user?.id]);
 
   const toggleCourse = (code: string) => {
     setSelectedCourses((prev) => {
+      const next = new Set(prev);
+      if (next.has(code)) next.delete(code);
+      else next.add(code);
+      setHasChanges(true);
+      return next;
+    });
+  };
+
+  const toggleSpecial = (code: string, event: React.MouseEvent) => {
+    event.stopPropagation(); // Prevent triggering course selection
+    setSpecialCourses((prev) => {
       const next = new Set(prev);
       if (next.has(code)) next.delete(code);
       else next.add(code);
@@ -125,6 +141,7 @@ export default function AssistantDashboard() {
           body: JSON.stringify({
             assistant_id: user?.id,
             course_ids: Array.from(selectedCourses),
+            special_course_codes: Array.from(specialCourses),
             availability_updates: [],
           }),
         }
@@ -231,9 +248,17 @@ export default function AssistantDashboard() {
                           onClick={() => toggleCourse(course.code)}
                         >
                           <div className="flex flex-col md:flex-row gap-2 md:gap-8 items-start md:items-center w-full">
-                            <span className="font-semibold w-full md:w-1/3">
-                              {course.name}
-                            </span>
+                            <div className="flex items-center gap-2 w-full md:w-1/3">
+                              <span className="font-semibold">
+                                {course.name}
+                              </span>
+                              <button
+                                onClick={(e) => toggleSpecial(course.code, e)}
+                                className="text-xl hover:scale-110 transition-transform"
+                              >
+                                {specialCourses.has(course.code) ? "⭐" : "☆"}
+                              </button>
+                            </div>
                             <span className="w-full md:w-1/6 text-gray-600">
                               {course.code}
                             </span>
@@ -299,9 +324,17 @@ export default function AssistantDashboard() {
                         onClick={() => toggleCourse(course.code)}
                       >
                         <div className="flex flex-col md:flex-row gap-2 md:gap-8 items-start md:items-center w-full">
-                          <span className="font-semibold w-full md:w-1/3">
-                            {course.name}
-                          </span>
+                          <div className="flex items-center gap-2 w-full md:w-1/3">
+                            <span className="font-semibold">
+                              {course.name}
+                            </span>
+                            <button
+                              onClick={(e) => toggleSpecial(course.code, e)}
+                              className="text-xl hover:scale-110 transition-transform"
+                            >
+                              {specialCourses.has(course.code) ? "⭐" : "☆"}
+                            </button>
+                          </div>
                           <span className="w-full md:w-1/6 text-gray-600">
                             {course.code}
                           </span>

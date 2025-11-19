@@ -10,13 +10,14 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_11_19_082131) do
+ActiveRecord::Schema[8.0].define(version: 2025_11_19_082937) do
   create_table "assistantcourses", force: :cascade do |t|
     t.integer "assistant_id", null: false
     t.integer "course_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.time "assigned_time"
+    t.boolean "special", default: false
     t.index ["assistant_id"], name: "index_assistantcourses_on_assistant_id"
     t.index ["course_id"], name: "index_assistantcourses_on_course_id"
   end
