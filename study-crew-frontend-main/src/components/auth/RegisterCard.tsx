@@ -3,8 +3,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { useAuthModal } from '@/components/context/AuthModalContext';
 import { useState } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -16,6 +17,7 @@ const formSchema = z.object({
   role: z.enum(['user', 'assistant'], { message: 'Please select a role.' }),
   academic_year: z.number().min(1).max(4, { message: 'Academic year must be between 1 and 4.' }),
   telegram_username: z.string().optional(),
+  bio: z.string().max(70, { message: 'Bio must be at most 70 characters.' }).optional(),
 }).refine((data) => {
   if (data.role === 'assistant') {
     return data.academic_year > 1;
@@ -38,9 +40,13 @@ export default function RegisterCard() {
       role: 'user',
       academic_year: 1,
       telegram_username: '',
+      bio: '',
     },
   });
   const { openModal, closeModal } = useAuthModal();
+
+  const bioValue = form.watch("bio");
+  const remainingChars = 70 - (bioValue?.length || 0);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setLoading(true);
@@ -58,6 +64,7 @@ export default function RegisterCard() {
             role: values.role,
             academic_year: values.academic_year,
             telegram_username: values.telegram_username || null,
+            bio: values.bio || null,
           },
         }),
       });
@@ -156,6 +163,16 @@ export default function RegisterCard() {
                 <FormControl>
                   <Input placeholder="@yourtelegram" {...field} />
                 </FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+            <FormField name="bio" control={form.control} render={({ field }) => (
+              <FormItem>
+                <FormLabel>Bio (Optional)</FormLabel>
+                <FormControl>
+                  <Textarea placeholder="Tell us about yourself (max 70 characters)" maxLength={70} {...field} />
+                </FormControl>
+                <FormDescription>{remainingChars} characters remaining</FormDescription>
                 <FormMessage />
               </FormItem>
             )} />

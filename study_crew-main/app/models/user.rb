@@ -22,6 +22,7 @@ class User < ApplicationRecord
     validates :role, presence: true, inclusion: { in: %w[ user assistant ] }
     validates :academic_year, presence: true
     validates :password, presence: true, length: { minimum: 8 }, on: :create
+    validates :bio, length: { maximum: 70 }, allow_blank: true
     validate :current_password_must_be_correct, if: -> { password.present? && persisted? }
 
     def current_password_must_be_correct

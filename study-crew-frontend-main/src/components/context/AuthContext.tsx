@@ -71,7 +71,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const updateUser = (updatedUser: any) => {
-    setUser(updatedUser);
+    const newUser = JSON.parse(JSON.stringify(updatedUser));
+    setUser(newUser);
     localStorage.setItem("user", JSON.stringify(updatedUser));
   };
 
