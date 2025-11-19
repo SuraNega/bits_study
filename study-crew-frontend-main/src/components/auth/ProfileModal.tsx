@@ -26,6 +26,8 @@ export default function ProfileModal() {
   const [open, setOpen] = useState(false);
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
   const { user, role, updateUser } = useAuth();
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(user?.profile_picture_url || null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -51,6 +53,23 @@ export default function ProfileModal() {
       });
     }
   }, [user, form]);
+
+  // Reset preview when modal opens or user picture changes
+  useEffect(() => {
+    if (open) {
+      setPreviewUrl(user?.profile_picture_url || null);
+      setImageFile(null);
+    }
+  }, [open, user?.profile_picture_url]);
+
+  // Revoke object URL to avoid memory leak
+  useEffect(() => {
+    return () => {
+      if (previewUrl?.startsWith('blob:')) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setLoading(true);
@@ -80,21 +99,36 @@ export default function ProfileModal() {
         updateData.activity_status = newActivityStatus || null;
       }
 
+      const hasPicture = Boolean(imageFile);
       const hasChanges = Object.keys(updateData).length > 0;
 
-      if (!hasChanges) {
-        // No changes, just close the modal
+      if (!hasChanges && !hasPicture) {
+        // No changes and no new picture, just close the modal
         setOpen(false);
         form.reset();
         return;
       }
 
-      const res = await fetch(`http://localhost:3000/users/${user.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ user: updateData }),
-      });
+      let res: Response;
+      if (imageFile) {
+        const formData = new FormData();
+        Object.entries(updateData).forEach(([key, value]) => {
+          formData.append(`user[${key}]`, value as string | Blob);
+        });
+        formData.append('user[profile_picture]', imageFile);
+        res = await fetch(`http://localhost:3000/users/${user.id}`, {
+          method: 'PATCH',
+          credentials: 'include',
+          body: formData,
+        });
+      } else {
+        res = await fetch(`http://localhost:3000/users/${user.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ user: updateData }),
+        });
+      }
 
       if (!res.ok) {
         const errorData = await res.json();
@@ -121,8 +155,16 @@ export default function ProfileModal() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger>
-        <Button variant="ghost" size="icon" className="rounded-full">
-          <User className="h-5 w-5" />
+        <Button variant="ghost" size="icon" className="rounded-full overflow-hidden">
+          {user?.profile_picture_url ? (
+            <img
+              src={user.profile_picture_url}
+              alt="avatar"
+              className="h-8 w-8 object-cover rounded-full"
+            />
+          ) : (
+            <User className="h-5 w-5" />
+          )}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
@@ -157,6 +199,31 @@ export default function ProfileModal() {
                 <FormMessage />
               </FormItem>
             )} />
+            {/* Profile Picture */}
+            <FormItem>
+              <FormLabel>Profile Picture</FormLabel>
+              {previewUrl && (
+                <img
+                  src={previewUrl}
+                  alt="selected avatar"
+                  className="h-20 w-20 rounded-full object-cover mb-2"
+                />
+              )}
+              <FormControl>
+                <Input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] || null;
+                    setImageFile(file);
+                    if (file) {
+                      const url = URL.createObjectURL(file);
+                      setPreviewUrl(url);
+                    }
+                  }}
+                />
+              </FormControl>
+            </FormItem>
             {role === 'assistant' && (
               <FormField name="activity_status" control={form.control} render={({ field }) => (
                 <FormItem>

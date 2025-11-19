@@ -1,5 +1,10 @@
 class User < ApplicationRecord
+  include Rails.application.routes.url_helpers
+
     has_secure_password
+
+    # Profile picture attachment
+    has_one_attached :profile_picture
 
     attr_accessor :current_password
 
@@ -25,6 +30,12 @@ class User < ApplicationRecord
     validates :bio, length: { maximum: 70 }, allow_blank: true
     validate :current_password_must_be_correct, if: -> { password.present? && persisted? }
 
+    # Returns relative URL path to the profile picture if attached
+    def profile_picture_url
+      return unless profile_picture.attached?
+      rails_blob_url(profile_picture, host: ENV.fetch("RAILS_HOST", "http://localhost:3000"))
+    end
+
     def current_password_must_be_correct
       return if current_password.blank?
       old_digest = password_digest_was
@@ -39,5 +50,10 @@ class User < ApplicationRecord
 
     def user?
       role == "user"
+    end
+
+    # Override as_json to include profile_picture_url
+    def as_json(options = {})
+      super(options).merge(profile_picture_url: profile_picture_url)
     end
 end
