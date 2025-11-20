@@ -16,10 +16,14 @@ interface Assistant {
   rating?: number;
   courses?: string[];
   available?: boolean;
+  activity_status?: string;
+  availabilityLabel?: string;
+  availabilityClass?: string;
   profile_picture?: string;
   profile_picture_url?: string;
   image?: string;
   profileImage?: string | null;
+  isAvailable?: boolean;
 }
 
 interface Course {
@@ -75,11 +79,27 @@ export default function CourseDetailsModal({
         const formattedAssistants = assistantsData.map((ac: any) => {
           const assistant = ac.assistant || ac; // Handle both nested and direct assistant objects
           const profileImage = assistant.profile_picture_url || assistant.profile_picture || assistant.image || null;
-
+          const normalizedStatus = (assistant.activity_status || "available").toLowerCase();
+          const availabilityLabel =
+            normalizedStatus === "available"
+              ? "Available"
+              : normalizedStatus === "busy"
+              ? "Busy"
+              : "Not Available";
+          const availabilityClass =
+            normalizedStatus === "available"
+              ? "text-green-600"
+              : normalizedStatus === "busy"
+              ? "text-yellow-600"
+              : "text-red-600";
+          const isAvailable = normalizedStatus === "available";
+ 
           return {
             ...assistant,
             year: assistant.academic_year || 3,
-            available: true,
+            availabilityLabel,
+            availabilityClass,
+            isAvailable,
             profileImage
           };
         });
@@ -204,8 +224,10 @@ export default function CourseDetailsModal({
                         </div>
 
                         <div className="flex items-center gap-3">
-                          <span className={`font-medium text-sm ${assistant.available !== false ? 'text-green-600' : 'text-red-600'}`}>
-                            {assistant.available !== false ? 'Available' : 'Busy'}
+                          <span
+                            className={`font-medium text-sm ${assistant.availabilityClass || (assistant.isAvailable ? 'text-green-600' : 'text-red-600')}`}
+                          >
+                            {assistant.availabilityLabel || (assistant.isAvailable ? 'Available' : 'Not Available')}
                           </span>
                           <span className="text-gray-400">•</span>
                         </div>
