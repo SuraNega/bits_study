@@ -244,7 +244,11 @@ class AssistantCoursesController < ApplicationController
       render json: { error: "Course not found." }, status: :not_found
     else
       @assistant_courses = AssistantCourse.includes(:assistant).where(course_id: params[:course_id])
-      render json: @assistant_courses.as_json(include: [ :assistant ])
+      render json: @assistant_courses.as_json(include: {
+        assistant: {
+          methods: [ :profile_picture_url ]
+        }
+      })
     end
   end
 

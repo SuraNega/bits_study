@@ -16,6 +16,10 @@ interface Assistant {
   rating?: number;
   courses?: string[];
   available?: boolean;
+  profile_picture?: string;
+  profile_picture_url?: string;
+  image?: string;
+  profileImage?: string | null;
 }
 
 interface Course {
@@ -66,7 +70,20 @@ export default function CourseDetailsModal({
         return res.json();
       })
       .then((assistantsData) => {
-        setAssistants(assistantsData);
+        console.log('Raw assistants data:', assistantsData);
+        // Map the assistant_courses to extract the nested assistant data
+        const formattedAssistants = assistantsData.map((ac: any) => {
+          const assistant = ac.assistant || ac; // Handle both nested and direct assistant objects
+          const profileImage = assistant.profile_picture_url || assistant.profile_picture || assistant.image || null;
+
+          return {
+            ...assistant,
+            year: assistant.academic_year || 3,
+            available: true,
+            profileImage
+          };
+        });
+        setAssistants(formattedAssistants);
       })
       .catch((err) => {
         setError(err.message);
@@ -86,8 +103,14 @@ export default function CourseDetailsModal({
       isOpen={isOpen}
       onRequestClose={onClose}
       contentLabel="Course Details"
-      className="bg-white rounded-lg shadow-xl p-8 max-w-4xl mx-auto my-8"
-      overlayClassName="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"
+      className="bg-white rounded-lg shadow-2xl p-8 max-w-4xl w-full mx-4 my-8 border-none outline-none focus:outline-none"
+      overlayClassName="fixed inset-0 bg-black/50 flex items-start justify-center p-4 overflow-y-auto"
+      style={{
+        overlay: {
+          zIndex: 50,
+          backdropFilter: 'blur(2px)'
+        }
+      }}
     >
       {loading ? (
         <div className="text-center">Loading course details...</div>
@@ -144,44 +167,73 @@ export default function CourseDetailsModal({
             ) : (
               <div className="space-y-4">
                 {assistants.map((assistant) => (
-                  <Card key={assistant.id} className="p-6">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <div className="flex items-start justify-between mb-3">
-                          <div>
-                            <h3 className="font-semibold text-lg">{assistant.name}</h3>
-                            <p className="text-sm text-gray-600">Year {assistant.year || 3}</p>
+                  <Card key={assistant.id} className="p-4">
+                    <div className="flex items-center gap-4">
+                      {/* Profile Picture */}
+                      <div className="flex-shrink-0">
+                        {assistant.profileImage ? (
+                          <img
+                            src={assistant.profileImage}
+                            alt={`${assistant.name} avatar`}
+                            className="w-12 h-12 rounded-full object-cover border border-gray-200"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold text-lg">
+                            {assistant.name
+                              .split(' ')
+                              .map(n => n[0])
+                              .join('')
+                              .toUpperCase()
+                              .substring(0, 2)}
                           </div>
-                          <div className="flex items-center gap-1">
-                            <span className="text-yellow-500">★</span>
-                            <span className="font-medium">{assistant.rating || 4.5}</span>
-                          </div>
+                        )}
+                      </div>
+
+                      {/* Details in one line */}
+                      <div className="flex-1 flex items-center gap-6 overflow-x-auto hide-scrollbar px-2">
+                        <div className="flex items-center gap-3">
+                          <h3 className="font-semibold whitespace-nowrap text-base">{assistant.name}</h3>
+                          <span className="text-gray-400">•</span>
+                          <span className="whitespace-nowrap text-gray-700">Year {assistant.year || 3}</span>
                         </div>
-                        
-                        <div className="mb-4">
-                          <p className="text-sm text-gray-600 mb-2">Courses:</p>
-                          <div className="flex flex-wrap gap-2">
+
+                        <div className="flex items-center gap-3">
+                          <span className="text-yellow-500">★</span>
+                          <span className="font-medium text-gray-800">{assistant.rating || 4.5}</span>
+                          <span className="text-gray-400">•</span>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                          <span className={`font-medium text-sm ${assistant.available !== false ? 'text-green-600' : 'text-red-600'}`}>
+                            {assistant.available !== false ? 'Available' : 'Busy'}
+                          </span>
+                          <span className="text-gray-400">•</span>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                          <span className="text-gray-500 text-sm">Courses:</span>
+                          <div className="flex gap-2">
                             {(assistant.courses || ['Math101', 'CS102']).map((course) => (
-                              <span key={course} className="text-sm bg-blue-100 text-blue-800 px-3 py-1 rounded">
+                              <span 
+                                key={course} 
+                                className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full whitespace-nowrap"
+                              >
                                 {course}
                               </span>
                             ))}
                           </div>
                         </div>
                       </div>
-                      
-                      <div className="ml-6 flex flex-col items-end gap-3">
-                        <span className={`text-sm font-medium ${(assistant.available !== false) ? 'text-green-600' : 'text-red-600'}`}>
-                          {(assistant.available !== false) ? 'Available' : 'Busy'}
-                        </span>
-                        <Button
-                          onClick={() => handleConnect(assistant.id)}
-                          disabled={assistant.available === false}
-                          className="bg-green-600 hover:bg-green-700 min-w-[120px]"
-                        >
-                          Request Help
-                        </Button>
-                      </div>
+
+                      {/* Request Help Button */}
+                      <Button
+                        onClick={() => handleConnect(assistant.id)}
+                        disabled={assistant.available === false}
+                        size="sm"
+                        className="bg-green-600 hover:bg-green-700 whitespace-nowrap ml-auto"
+                      >
+                        Request Help
+                      </Button>
                     </div>
                   </Card>
                 ))}
