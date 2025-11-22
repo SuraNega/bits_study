@@ -209,7 +209,8 @@ class AssistantCoursesController < ApplicationController
       render json: { error: "Assistant not found." }, status: :not_found
     else
       @assistant_courses = AssistantCourse.includes(:course).where(assistant_id: params[:assistant_id])
-      render json: @assistant_courses.as_json(include: [ :course ])
+      courses = @assistant_courses.map(&:course)
+      render json: courses
     end
   end
 
@@ -244,11 +245,11 @@ class AssistantCoursesController < ApplicationController
       render json: { error: "Course not found." }, status: :not_found
     else
       @assistant_courses = AssistantCourse.includes(:assistant).where(course_id: params[:course_id])
-      render json: @assistant_courses.as_json(include: {
-        assistant: {
-          methods: [ :profile_picture_url ]
-        }
-      })
+      
+      # Extract the assistant from each AssistantCourse
+      assistants = @assistant_courses.map(&:assistant)
+      
+      render json: assistants
     end
   end
 

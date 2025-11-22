@@ -3,18 +3,35 @@ import React, { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Modal from "react-modal";
+import AssistantDetailsModal from "./AssistantDetailsModal";
 
 interface Assistant {
   id: number;
   name: string;
   email: string;
+  bio?: string;
   academic_year: number;
   role: string;
   created_at: string;
-  updated_at: string;
-  year?: number;
+  updated_at?: string;
+  profileImage?: string;
+  telegram?: string;
+  phone?: string;
   rating?: number;
-  courses?: string[];
+  courses?: Array<{
+    code: string;
+    name: string;
+    special: boolean;
+  } | string>;
+  comments?: Array<{
+    id: number;
+    content: string;
+    rating: number;
+    created_at: string;
+    author: string;
+  }>;
+  // Additional properties from CourseDetailsModal
+  year?: number;
   available?: boolean;
   activity_status?: string;
   availabilityLabel?: string;
@@ -22,7 +39,6 @@ interface Assistant {
   profile_picture?: string;
   profile_picture_url?: string;
   image?: string;
-  profileImage?: string | null;
   isAvailable?: boolean;
 }
 
@@ -49,6 +65,8 @@ export default function CourseDetailsModal({
 }: CourseDetailsModalProps) {
   const [course, setCourse] = useState<Course | null>(null);
   const [assistants, setAssistants] = useState<Assistant[]>([]);
+  const [selectedAssistant, setSelectedAssistant] = useState<Assistant | null>(null);
+  const [isAssistantModalOpen, setIsAssistantModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -100,7 +118,8 @@ export default function CourseDetailsModal({
             availabilityLabel,
             availabilityClass,
             isAvailable,
-            profileImage
+            profileImage,
+            telegram: assistant.telegram_username // Map telegram_username to telegram
           };
         });
         setAssistants(formattedAssistants);
@@ -113,24 +132,36 @@ export default function CourseDetailsModal({
       });
   }, [courseCode, isOpen]);
 
-  const handleConnect = (assistantId: number) => {
-    // TODO: Implement connection logic
+  const handleAssistantClick = (assistant: Assistant) => {
+    setSelectedAssistant(assistant);
+    setIsAssistantModalOpen(true);
+  };
+
+  const handleCloseAssistantModal = () => {
+    setIsAssistantModalOpen(false);
+    setSelectedAssistant(null);
+  };
+
+  const handleConnect = (assistantId: number, event: React.MouseEvent) => {
+    event.stopPropagation();
     console.log("Connecting with assistant:", assistantId);
+    // TODO: Implement connection logic
   };
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onRequestClose={onClose}
-      contentLabel="Course Details"
-      className="bg-white rounded-lg shadow-2xl p-8 max-w-4xl w-full mx-4 my-8 border-none outline-none focus:outline-none"
-      overlayClassName="fixed inset-0 bg-black/50 flex items-start justify-center p-4 overflow-y-auto"
-      style={{
-        overlay: {
-          zIndex: 50,
-          backdropFilter: 'blur(2px)'
-        }
-      }}
+    <>
+      <Modal
+        isOpen={isOpen}
+        onRequestClose={onClose}
+        contentLabel="Course Details"
+        className="bg-white rounded-lg shadow-2xl p-8 max-w-4xl w-full mx-4 my-8 border-none outline-none focus:outline-none"
+        overlayClassName="fixed inset-0 bg-black/50 flex items-start justify-center p-4 overflow-y-auto"
+        style={{
+          overlay: {
+            zIndex: 50,
+            backdropFilter: 'blur(2px)'
+          }
+        }}
     >
       {loading ? (
         <div className="text-center">Loading course details...</div>
@@ -187,7 +218,11 @@ export default function CourseDetailsModal({
             ) : (
               <div className="space-y-4">
                 {assistants.map((assistant) => (
-                  <Card key={assistant.id} className="p-4">
+                  <Card 
+                    key={assistant.id} 
+                    className="p-4 hover:bg-gray-50 cursor-pointer transition-colors"
+                    onClick={() => handleAssistantClick(assistant)}
+                  >
                     <div className="flex items-center gap-4">
                       {/* Profile Picture */}
                       <div className="flex-shrink-0">
@@ -195,7 +230,7 @@ export default function CourseDetailsModal({
                           <img
                             src={assistant.profileImage}
                             alt={`${assistant.name} avatar`}
-                            className="w-12 h-12 rounded-full object-cover border border-gray-200"
+                            className="w-12 h-12 rounded-full object-cover border-2 border-primary/20"
                           />
                         ) : (
                           <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold text-lg">
@@ -231,25 +266,11 @@ export default function CourseDetailsModal({
                           </span>
                           <span className="text-gray-400">•</span>
                         </div>
-
-                        <div className="flex items-center gap-3">
-                          <span className="text-gray-500 text-sm">Courses:</span>
-                          <div className="flex gap-2">
-                            {(assistant.courses || ['Math101', 'CS102']).map((course) => (
-                              <span 
-                                key={course} 
-                                className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full whitespace-nowrap"
-                              >
-                                {course}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
                       </div>
 
                       {/* Request Help Button */}
                       <Button
-                        onClick={() => handleConnect(assistant.id)}
+                        onClick={(e) => handleConnect(assistant.id, e)}
                         disabled={assistant.available === false}
                         size="sm"
                         className="bg-green-600 hover:bg-green-700 whitespace-nowrap ml-auto"
@@ -265,5 +286,26 @@ export default function CourseDetailsModal({
         </div>
       )}
     </Modal>
+    
+    {/* Assistant Details Modal */}
+    {selectedAssistant && (
+      <AssistantDetailsModal
+        isOpen={isAssistantModalOpen}
+        onClose={handleCloseAssistantModal}
+        assistant={{
+          ...selectedAssistant,
+          bio: selectedAssistant.bio || "This assistant hasn't added a bio yet.",
+          comments: selectedAssistant.comments || [],
+          telegram: selectedAssistant.telegram,
+          phone: selectedAssistant.phone,
+          courses: (selectedAssistant.courses || []).map(course => ({
+            code: typeof course === 'string' ? course : course.code || '',
+            name: typeof course === 'string' ? course : course.name || course.code || '',
+            special: typeof course === 'object' ? course.special || false : false
+          }))
+        }}
+      />
+    )}
+  </>
   );
 }

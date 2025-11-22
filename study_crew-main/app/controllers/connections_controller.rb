@@ -52,6 +52,6 @@ class ConnectionsController < ApplicationController
   end
 
   def connection_params
-    params.require(:connection).permit(:user_id, :assistant_id, :status, :telegram_username, :course_ids, :problem_description)
+    params.require(:connection).permit(:user_id, :assistant_id, :status, :telegram_username, :course_ids, :problem_description, :rating, :review, :reviewed_at)
   end
 end

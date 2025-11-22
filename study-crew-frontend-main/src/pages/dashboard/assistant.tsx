@@ -96,9 +96,13 @@ export default function AssistantDashboard() {
          if (!res.ok) throw new Error("Failed to fetch assigned courses");
          return res.json();
        })
-       .then((data) => {
-         const assignedCodes = data.map((ac: any) => ac.course.code as string);
-         const specialCodes = data.filter((ac: any) => ac.special).map((ac: any) => ac.course.code as string);
+       .then((courses) => {
+         // New response format: array of course objects with direct properties
+         const assignedCodes = courses.map((course: any) => course.code as string);
+         const specialCodes = courses
+           .filter((course: any) => course.special)
+           .map((course: any) => course.code as string);
+           
          setAssignedCourses(new Set(assignedCodes));
          setSelectedCourses(new Set(assignedCodes)); // Initialize selected with assigned
          setSpecialCourses(new Set(specialCodes));
