@@ -55,108 +55,29 @@ export default function AssistantDetailsModal({
     : "N/A";
 
   const handleSubmitReview = async (rating: number, comment: string) => {
-    console.log('Starting review submission with:', { rating, comment });
     setIsSubmitting(true);
-    
     try {
-      console.log('Fetching connections...');
-      const baseUrl = 'http://localhost:3000'; // Update this to your backend URL
-      const connectionsResponse = await fetch(`${baseUrl}/connections`, {
-        credentials: 'include', // Important for sending cookies/session
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        }
-      });
+      // TODO: Replace with actual API call to submit the review
+      // const response = await fetch('/api/reviews', {
+      //   method: 'POST',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify({
+      //     assistantId: assistant.id,
+      //     rating,
+      //     comment
+      //   })
+      // });
+      // const newReview = await response.json();
       
-      if (!connectionsResponse.ok) {
-        const errorText = await connectionsResponse.text();
-        console.error('Error response:', errorText);
-        throw new Error(`Failed to fetch connections: ${connectionsResponse.status} ${connectionsResponse.statusText}`);
-      }
-
-      const connections = await connectionsResponse.json();
-      console.log('Fetched connections:', connections);
-      
-      // Find a connection where the current user is the student and this assistant is the assistant
-      let userConnection = connections.find((conn: any) => {
-        console.log('Checking connection:', conn);
-        return conn.assistant_id === assistant.id;
-      });
-      
-      console.log('Found user connection:', userConnection);
-      
-      // If no connection exists, create a new one
-      if (!userConnection) {
-        console.log('No existing connection, creating new one...');
-        const createResponse = await fetch(`${baseUrl}/connections`, {
-          method: 'POST',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          body: JSON.stringify({
-            connection: {
-              assistant_id: assistant.id,
-              status: 'completed',
-              rating: rating,
-              review: comment,
-              reviewed_at: new Date().toISOString()
-            }
-          })
-        });
-        
-        console.log('Create connection response status:', createResponse.status);
-        
-        if (!createResponse.ok) {
-          const errorData = await createResponse.json().catch(() => ({}));
-          console.error('Create connection validation errors:', errorData.errors);
-          throw new Error(`Failed to create connection: ${errorData.errors ? errorData.errors.join(', ') : 'Unknown error'}`);
-        }
-        
-        userConnection = await createResponse.json();
-        console.log('Created new connection:', userConnection);
-      } else {
-        console.log('Updating existing connection...');
-        const updateResponse = await fetch(`${baseUrl}/connections/${userConnection.id}`, {
-          method: 'PATCH',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          body: JSON.stringify({
-            connection: {
-              rating: rating,
-              review: comment,
-              reviewed_at: new Date().toISOString()
-            }
-          })
-        });
-        
-        console.log('Update connection response status:', updateResponse.status);
-        
-        if (!updateResponse.ok) {
-          const errorData = await updateResponse.json().catch(() => ({}));
-          console.error('Update connection error:', errorData);
-          throw new Error('Failed to submit review');
-        }
-        
-        userConnection = await updateResponse.json();
-        console.log('Updated connection:', userConnection);
-      }
-      
-      // Update the local state with the new review
+      // For now, just add to local state
       const newReview = {
         id: Date.now(), // Temporary ID
         content: comment,
         rating,
         created_at: new Date().toISOString(),
-        author: 'You'
+        author: 'You' // This would come from the user context
       };
       
-      console.log('Adding new review to UI:', newReview);
       setReviews([...reviews, newReview]);
       setShowReviewForm(false);
     } catch (error) {
