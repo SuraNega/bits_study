@@ -21,6 +21,22 @@ class User < ApplicationRecord
     has_many :received_connections, class_name: "Connection", foreign_key: :assistant_id, dependent: :destroy
     has_many :learners, through: :received_connections, source: :user
 
+    # Reviews given by this user (when they review assistants)
+    has_many :reviews_given, class_name: 'AssistantReview', foreign_key: :user_id, dependent: :destroy
+    
+    # Reviews received by this user (when they are the assistant being reviewed)
+    has_many :reviews_received, class_name: 'AssistantReview', foreign_key: :assistant_id, dependent: :destroy
+    
+    # Helpers for reviews
+    def average_rating
+      return 0 if reviews_received.empty?
+      reviews_received.average(:rating).to_f.round(1)
+    end
+    
+    def review_count
+      reviews_received.count
+    end
+
 
     validates :name, presence: true
     validates :email, uniqueness: true

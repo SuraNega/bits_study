@@ -21,6 +21,30 @@ class ApplicationController < ActionController::API
     render json: { error: "Bad Request", message: "Invalid JSON format" }, status: :bad_request
   end
 
+  # Get the current logged-in user
+  def current_user
+    @current_user ||= User.find_by(id: session[:user_id]) if session[:user_id]
+  end
+
+  # Check if user is logged in
+  def logged_in?
+    !!current_user
+  end
+
+  # Require user to be logged in
+  def require_login
+    unless logged_in?
+      render json: { error: "You must be logged in to access this resource" }, status: :unauthorized
+    end
+  end
+
+  # Require admin privileges
+  def require_admin
+    unless current_user&.admin?
+      render json: { error: "You don't have permission to perform this action" }, status: :forbidden
+    end
+  end
+
   # Skip CSRF protection for JSON requests (API)
   # protect_from_forgery with: :null_session, if: -> { request.format.json? }
 end

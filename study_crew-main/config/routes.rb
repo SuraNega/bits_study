@@ -8,6 +8,11 @@ Rails.application.routes.draw do
   resources :connections
   resources :courses
   resources :assistant_courses
+  resources :assistant_reviews
+
+  # Custom routes for assistant_reviews
+  get '/assistants/:assistant_id/reviews', to: 'assistant_reviews#by_assistant'
+  get '/users/:user_id/reviews', to: 'assistant_reviews#by_user'
 
   # Custom routes for assistant_courses
   get "/assistant_courses/by_assistant/:assistant_id", to: "assistant_courses#by_assistant"
