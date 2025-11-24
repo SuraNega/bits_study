@@ -23,6 +23,8 @@ class AssistantReviewsController < ApplicationController
     else
       render json: { errors: @assistant_review.errors.full_messages }, status: :unprocessable_entity
     end
+  rescue ActiveRecord::RecordNotUnique
+    render json: { errors: ["Assistant has already been reviewed by you"] }, status: :unprocessable_entity
   end
 
   # PATCH/PUT /assistant_reviews/1

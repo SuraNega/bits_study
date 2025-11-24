@@ -24,7 +24,7 @@ interface Assistant {
   }>;
   comments?: Array<{
     id: number;
-    content: string;
+    comment: string;
     rating: number;
     created_at: string;
     author: string;
@@ -44,8 +44,38 @@ export default function AssistantDetailsModal({
 }: AssistantDetailsModalProps) {
   const [showContactModal, setShowContactModal] = useState(false);
   const [showReviewForm, setShowReviewForm] = useState(false);
-  const [reviews, setReviews] = useState(assistant?.comments || []);
+  const [reviews, setReviews] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Fetch reviews when modal opens
+  React.useEffect(() => {
+    if (isOpen && assistant) {
+      fetchReviews();
+    }
+  }, [isOpen, assistant?.id]);
+
+  const fetchReviews = async () => {
+    if (!assistant) return;
+    try {
+      const response = await fetch(`http://localhost:3000/assistants/${assistant.id}/reviews`, {
+        credentials: 'include',
+      });
+      if (response.ok) {
+        const data = await response.json();
+        // Map API response to frontend format
+        const mappedReviews = data.map((review: any) => ({
+          id: review.id,
+          comment: review.comment,
+          rating: review.rating,
+          created_at: review.created_at,
+          author: review.user?.name || 'Anonymous'
+        }));
+        setReviews(mappedReviews);
+      }
+    } catch (error) {
+      console.error('Failed to fetch reviews:', error);
+    }
+  };
 
   if (!assistant) return null;
 
@@ -54,34 +84,48 @@ export default function AssistantDetailsModal({
     ? (reviews.reduce((sum, comment) => sum + comment.rating, 0) / reviews.length).toFixed(1)
     : "N/A";
 
-  const handleSubmitReview = async (rating: number, comment: string) => {
+const handleSubmitReview = async (rating: number, comment: string) => {
     setIsSubmitting(true);
     try {
-      // TODO: Replace with actual API call to submit the review
-      // const response = await fetch('/api/reviews', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({
-      //     assistantId: assistant.id,
-      //     rating,
-      //     comment
-      //   })
-      // });
-      // const newReview = await response.json();
-      
-      // For now, just add to local state
-      const newReview = {
-        id: Date.now(), // Temporary ID
-        content: comment,
-        rating,
-        created_at: new Date().toISOString(),
-        author: 'You' // This would come from the user context
-      };
-      
-      setReviews([...reviews, newReview]);
+      // 1. Check if user is logged in (session-based auth)
+      // Note: Token check removed as backend uses sessions, not JWT
+
+      // 2. Send POST request to Rails
+      // Adjust URL port if needed (Rails usually runs on 3000)
+      const response = await fetch("http://localhost:3000/assistant_reviews", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: 'include',
+        // 3. The Payload MUST wrap parameters in 'assistant_review'
+        body: JSON.stringify({
+          assistant_review: {
+            assistant_id: assistant.id,
+            rating: rating,
+            comment: comment // Backend expects 'comment', not 'content'
+          }
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        // 4. Handle Rails Validation Errors (e.g., "User has already been reviewed")
+        const errorMessage = data.errors 
+          ? data.errors.join(", ") 
+          : "Failed to submit review";
+        throw new Error(errorMessage);
+      }
+
+      // 5. Refetch reviews to update the list
+      await fetchReviews();
       setShowReviewForm(false);
+      
     } catch (error) {
       console.error('Failed to submit review:', error);
+      // This will show your model's validation error: "Assistant has already been reviewed by you"
+      alert(error instanceof Error ? error.message : "An error occurred");
     } finally {
       setIsSubmitting(false);
     }
@@ -324,7 +368,7 @@ export default function AssistantDetailsModal({
                           <span className="font-medium">{review.rating}.0</span>
                         </div>
                       </div>
-                      <p className="mt-2 text-gray-700">{review.content}</p>
+                      <p className="mt-2 text-gray-700">{review.comment}</p>
                     </div>
                   ))}
                 </div>
