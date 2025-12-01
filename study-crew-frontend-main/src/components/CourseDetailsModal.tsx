@@ -77,7 +77,7 @@ export default function CourseDetailsModal({
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState({
     availability: 'all', // 'all', 'available', 'busy', 'not_available'
-    specialCourse: 'all', // 'all', 'special', 'regular'
+    specialCourse: false, // true = special courses only, false = all courses
     minRating: 0, // 0 means no rating filter
   });
 
@@ -234,12 +234,14 @@ export default function CourseDetailsModal({
       }
 
       // Filter by special course
-      if (filters.specialCourse !== 'all' && assistant.courses) {
-        const isSpecial = assistant.courses.some(course => 
-          typeof course === 'object' ? course.special : false
-        );
-        if (filters.specialCourse === 'special' && !isSpecial) return false;
-        if (filters.specialCourse === 'regular' && isSpecial) return false;
+      if (filters.specialCourse) {
+        const hasSpecialCourse = assistant.courses?.some(course => {
+          if (typeof course === 'object' && course !== null) {
+            return course.special === true;
+          }
+          return false;
+        });
+        if (!hasSpecialCourse) return false;
       }
 
       // Filter by rating
@@ -331,11 +333,11 @@ export default function CourseDetailsModal({
                         </button>
                       </span>
                     )}
-                    {filters.specialCourse !== 'all' && (
+                    {filters.specialCourse && (
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                        {filters.specialCourse === 'special' ? 'Special Course' : 'Regular Course'}
+                        Special Course
                         <button 
-                          onClick={() => handleFilterChange('specialCourse', 'all')}
+                          onClick={() => handleFilterChange('specialCourse', false)}
                           className="ml-1.5 inline-flex items-center justify-center h-4 w-4 rounded-full bg-purple-200 hover:bg-purple-300"
                         >
                           <X className="h-3 w-3" />
@@ -384,17 +386,17 @@ export default function CourseDetailsModal({
                       </select>
                     </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Course Type</label>
-                      <select
-                        className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
-                        value={filters.specialCourse}
-                        onChange={(e) => handleFilterChange('specialCourse', e.target.value)}
-                      >
-                        <option value="all">All Types</option>
-                        <option value="special">Special Courses Only</option>
-                        <option value="regular">Regular Courses Only</option>
-                      </select>
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id="specialCourseCheckbox"
+                        checked={filters.specialCourse}
+                        onChange={(e) => handleFilterChange('specialCourse', e.target.checked)}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      />
+                      <label htmlFor="specialCourseCheckbox" className="ml-2 block text-sm text-gray-700">
+                        Special Course
+                      </label>
                     </div>
 
                     <div>
