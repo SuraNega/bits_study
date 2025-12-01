@@ -1,9 +1,10 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Modal from "react-modal";
 import AssistantDetailsModal from "./AssistantDetailsModal";
+import { X, Filter, Star } from "lucide-react";
 
 interface Assistant {
   id: number;
@@ -18,14 +19,16 @@ interface Assistant {
   telegram?: string;
   phone?: string;
   rating?: number;
+  // Courses can be either an array of objects with code/name/special or an array of strings
   courses?: Array<{
     code: string;
     name: string;
     special: boolean;
-  } | string>;
+  } | string> | null;
+  // Standardized to use 'comment' instead of 'content' to match the actual data structure
   comments?: Array<{
     id: number;
-    content: string;
+    comment: string;  // Changed from 'content' to 'comment' to match the actual data structure
     rating: number;
     created_at: string;
     author: string;
@@ -40,6 +43,7 @@ interface Assistant {
   profile_picture_url?: string;
   image?: string;
   isAvailable?: boolean;
+  averageRating?: string | null;
 }
 
 interface Course {
@@ -69,6 +73,13 @@ export default function CourseDetailsModal({
   const [isAssistantModalOpen, setIsAssistantModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [assistantRatings, setAssistantRatings] = useState<Record<number, string>>({});
+  const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState({
+    availability: 'all', // 'all', 'available', 'busy', 'not_available'
+    specialCourse: 'all', // 'all', 'special', 'regular'
+    minRating: 0, // 0 means no rating filter
+  });
 
   useEffect(() => {
     if (!courseCode || !isOpen) return;
@@ -91,11 +102,32 @@ export default function CourseDetailsModal({
         if (!res.ok) throw new Error("Failed to fetch assistants");
         return res.json();
       })
-      .then((assistantsData) => {
+      .then(async (assistantsData) => {
         console.log('Raw assistants data:', assistantsData);
-        // Map the assistant_courses to extract the nested assistant data
-        const formattedAssistants = assistantsData.map((ac: any) => {
-          const assistant = ac.assistant || ac; // Handle both nested and direct assistant objects
+        
+        // Fetch ratings for each assistant
+        const assistantsWithRatings = await Promise.all(assistantsData.map(async (ac: any) => {
+          const assistant = ac.assistant || ac;
+          
+          try {
+            // Fetch the assistant's details to get the latest rating
+            const response = await fetch(`/assistants/${assistant.id}`, {
+              credentials: 'include',
+            });
+            
+            if (response.ok) {
+              const assistantDetails = await response.json();
+              return { ...assistant, ...assistantDetails };
+            }
+          } catch (error) {
+            console.error(`Error fetching details for assistant ${assistant.id}:`, error);
+          }
+          
+          return assistant; // Return original if fetch fails
+        }));
+        
+        // Format the assistants
+        const formattedAssistants = assistantsWithRatings.map((assistant: any) => {
           const profileImage = assistant.profile_picture_url || assistant.profile_picture || assistant.image || null;
           const normalizedStatus = (assistant.activity_status || "available").toLowerCase();
           const availabilityLabel =
@@ -132,6 +164,42 @@ export default function CourseDetailsModal({
       });
   }, [courseCode, isOpen]);
 
+  // Fetch ratings for all assistants when the component mounts or assistants change
+  useEffect(() => {
+    const fetchRatings = async () => {
+      const ratings: Record<number, string> = {};
+      
+      // Fetch ratings for each assistant
+      for (const assistant of assistants) {
+        try {
+          const response = await fetch(`http://localhost:3000/assistants/${assistant.id}/reviews`, {
+            credentials: 'include',
+          });
+          
+          if (response.ok) {
+            const reviews = await response.json();
+            if (reviews && reviews.length > 0) {
+              const averageRating = (reviews.reduce((sum: number, review: any) => 
+                sum + (review.rating || 0), 0) / reviews.length).toFixed(1);
+              ratings[assistant.id] = averageRating;
+            } else {
+              ratings[assistant.id] = 'N/A';
+            }
+          }
+        } catch (error) {
+          console.error(`Error fetching reviews for assistant ${assistant.id}:`, error);
+          ratings[assistant.id] = 'N/A';
+        }
+      }
+      
+      setAssistantRatings(prev => ({ ...prev, ...ratings }));
+    };
+
+    if (assistants.length > 0) {
+      fetchRatings();
+    }
+  }, [assistants]);
+
   const handleAssistantClick = (assistant: Assistant) => {
     setSelectedAssistant(assistant);
     setIsAssistantModalOpen(true);
@@ -147,6 +215,44 @@ export default function CourseDetailsModal({
     console.log("Connecting with assistant:", assistantId);
     // TODO: Implement connection logic
   };
+
+  const handleFilterChange = useCallback((filterName: string, value: any) => {
+    setFilters(prev => ({
+      ...prev,
+      [filterName]: value
+    }));
+  }, []);
+
+  const getFilteredAssistants = useCallback(() => {
+    return assistants.filter(assistant => {
+      // Filter by availability
+      if (filters.availability !== 'all') {
+        const status = (assistant.activity_status || "available").toLowerCase();
+        if (filters.availability === 'available' && status !== 'available') return false;
+        if (filters.availability === 'busy' && status !== 'busy') return false;
+        if (filters.availability === 'not_available' && status === 'available') return false;
+      }
+
+      // Filter by special course
+      if (filters.specialCourse !== 'all' && assistant.courses) {
+        const isSpecial = assistant.courses.some(course => 
+          typeof course === 'object' ? course.special : false
+        );
+        if (filters.specialCourse === 'special' && !isSpecial) return false;
+        if (filters.specialCourse === 'regular' && isSpecial) return false;
+      }
+
+      // Filter by rating
+      if (filters.minRating > 0) {
+        const rating = parseFloat(assistantRatings[assistant.id] || '0');
+        if (rating < filters.minRating) return false;
+      }
+
+      return true;
+    });
+  }, [assistants, filters, assistantRatings]);
+
+  const filteredAssistants = getFilteredAssistants();
 
   return (
     <>
@@ -205,19 +311,142 @@ export default function CourseDetailsModal({
 
           {/* Available Assistants */}
           <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">
-              Available Assistants ({assistants.length})
-            </h2>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
+              <h2 className="text-2xl font-bold text-gray-900">
+                Available Assistants ({filteredAssistants.length})
+              </h2>
+              
+              <div className="flex items-center gap-2">
+                {(filters.availability !== 'all' || filters.specialCourse !== 'all' || filters.minRating > 0) && (
+                  <div className="flex flex-wrap gap-2">
+                    {filters.availability !== 'all' && (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        {filters.availability === 'available' ? 'Available' : 
+                         filters.availability === 'busy' ? 'Busy' : 'Not Available'}
+                        <button 
+                          onClick={() => handleFilterChange('availability', 'all')}
+                          className="ml-1.5 inline-flex items-center justify-center h-4 w-4 rounded-full bg-blue-200 hover:bg-blue-300"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </span>
+                    )}
+                    {filters.specialCourse !== 'all' && (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                        {filters.specialCourse === 'special' ? 'Special Course' : 'Regular Course'}
+                        <button 
+                          onClick={() => handleFilterChange('specialCourse', 'all')}
+                          className="ml-1.5 inline-flex items-center justify-center h-4 w-4 rounded-full bg-purple-200 hover:bg-purple-300"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </span>
+                    )}
+                    {filters.minRating > 0 && (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                        {filters.minRating}+ <Star className="h-3 w-3 ml-1" />
+                        <button 
+                          onClick={() => handleFilterChange('minRating', 0)}
+                          className="ml-1.5 inline-flex items-center justify-center h-4 w-4 rounded-full bg-yellow-200 hover:bg-yellow-300"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </span>
+                    )}
+                  </div>
+                )}
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowFilters(!showFilters)}
+                  className="flex items-center gap-1"
+                >
+                  <Filter className="h-4 w-4" />
+                  Filters
+                </Button>
+              </div>
 
-            {assistants.length === 0 ? (
+              {showFilters && (
+                <div className="absolute right-8 top-48 mt-2 w-64 bg-white rounded-lg shadow-lg p-4 z-10 border border-gray-200">
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Availability</label>
+                      <select
+                        className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
+                        value={filters.availability}
+                        onChange={(e) => handleFilterChange('availability', e.target.value)}
+                      >
+                        <option value="all">All Statuses</option>
+                        <option value="available">Available</option>
+                        <option value="busy">Busy</option>
+                        <option value="not_available">Not Available</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Course Type</label>
+                      <select
+                        className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
+                        value={filters.specialCourse}
+                        onChange={(e) => handleFilterChange('specialCourse', e.target.value)}
+                      >
+                        <option value="all">All Types</option>
+                        <option value="special">Special Courses Only</option>
+                        <option value="regular">Regular Courses Only</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Minimum Rating: {filters.minRating > 0 ? `${filters.minRating}+` : 'None'}
+                      </label>
+                      <input
+                        type="range"
+                        min="0"
+                        max="5"
+                        step="0.5"
+                        value={filters.minRating}
+                        onChange={(e) => handleFilterChange('minRating', parseFloat(e.target.value))}
+                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                      />
+                      <div className="flex justify-between text-xs text-gray-500 mt-1">
+                        <span>0</span>
+                        <span>5</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {filteredAssistants.length === 0 ? (
               <Card className="p-8 text-center">
                 <p className="text-gray-500">
-                  No assistants are currently available for this course.
+                  {assistants.length === 0 
+                    ? 'No assistants are currently available for this course.'
+                    : 'No assistants match the selected filters.'}
                 </p>
+                {assistants.length > 0 && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="mt-2"
+                    onClick={() => {
+                      setFilters({
+                        availability: 'all',
+                        specialCourse: 'all',
+                        minRating: 0
+                      });
+                    }}
+                  >
+                    Clear all filters
+                  </Button>
+                )}
               </Card>
             ) : (
               <div className="space-y-4">
-                {assistants.map((assistant) => (
+                {filteredAssistants.map((assistant) => (
                   <Card 
                     key={assistant.id} 
                     className="p-4 hover:bg-gray-50 cursor-pointer transition-colors"
@@ -254,7 +483,9 @@ export default function CourseDetailsModal({
 
                         <div className="flex items-center gap-3">
                           <span className="text-yellow-500">★</span>
-                          <span className="font-medium text-gray-800">{assistant.rating || 4.5}</span>
+                          <span className="font-medium text-gray-800">
+                            {assistantRatings[assistant.id] || 'N/A'}
+                          </span>
                           <span className="text-gray-400">•</span>
                         </div>
 
@@ -298,11 +529,20 @@ export default function CourseDetailsModal({
           comments: selectedAssistant.comments || [],
           telegram: selectedAssistant.telegram,
           phone: selectedAssistant.phone,
-          courses: (selectedAssistant.courses || []).map(course => ({
-            code: typeof course === 'string' ? course : course.code || '',
-            name: typeof course === 'string' ? course : course.name || course.code || '',
-            special: typeof course === 'object' ? course.special || false : false
-          }))
+          courses: (selectedAssistant.courses || []).map(course => {
+            if (typeof course === 'string') {
+              return {
+                code: course,
+                name: course,
+                special: false
+              };
+            }
+            return {
+              code: course.code || '',
+              name: course.name || course.code || '',
+              special: course.special || false
+            };
+          })
         }}
       />
     )}

@@ -1,9 +1,20 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Modal from "react-modal";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
 import { Star, MessageSquare, BookOpen, Clock, Mail } from "lucide-react";
 import ReviewForm from "./ReviewForm";
+
+interface Review {
+  id: number;
+  comment: string;
+  rating: number;
+  created_at: string;
+  user: {
+    id: number;
+    name: string;
+  };
+}
 
 interface Assistant {
   id: number;
@@ -22,6 +33,7 @@ interface Assistant {
     name: string;
     special: boolean;
   }>;
+  reviews?: Review[];
   comments?: Array<{
     id: number;
     comment: string;
@@ -44,10 +56,42 @@ export default function AssistantDetailsModal({
 }: AssistantDetailsModalProps) {
   const [showContactModal, setShowContactModal] = useState(false);
   const [showReviewForm, setShowReviewForm] = useState(false);
-  const [reviews, setReviews] = useState([]);
+  const [reviews, setReviews] = useState<Review[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Fetch reviews when modal opens
+  useEffect(() => {
+    const fetchReviews = async () => {
+      if (!assistant) return;
+      
+      setIsLoading(true);
+      setError(null);
+      
+      try {
+        const response = await fetch(`http://localhost:3000/assistants/${assistant.id}/reviews`, {
+          credentials: 'include',
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch reviews');
+        }
+        
+        const data = await response.json();
+        setReviews(data);
+      } catch (err) {
+        console.error('Error fetching reviews:', err);
+        setError('Failed to load reviews. Please try again later.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (isOpen && assistant) {
+      fetchReviews();
+    }
+  }, [isOpen, assistant]);
   React.useEffect(() => {
     if (isOpen && assistant) {
       fetchReviews();
@@ -346,7 +390,24 @@ const handleSubmitReview = async (rating: number, comment: string) => {
                 />
               )}
 
-              {reviews.length === 0 ? (
+              {isLoading ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+                  <p className="mt-2 text-gray-500">Loading reviews...</p>
+                </div>
+              ) : error ? (
+                <div className="text-center py-8 text-red-500">
+                  <p>{error}</p>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="mt-2"
+                    onClick={() => window.location.reload()}
+                  >
+                    Retry
+                  </Button>
+                </div>
+              ) : reviews.length === 0 ? (
                 <div className="text-center py-8">
                   <MessageSquare className="w-12 h-12 mx-auto text-gray-300 mb-2" />
                   <p className="text-gray-500">No reviews yet. Be the first to review!</p>
@@ -357,7 +418,7 @@ const handleSubmitReview = async (rating: number, comment: string) => {
                     <div key={review.id} className="border-b pb-4 last:border-0">
                       <div className="flex justify-between items-start">
                         <div>
-                          <h4 className="font-medium">{review.author}</h4>
+                          <h4 className="font-medium">{review.user?.name || 'Anonymous'}</h4>
                           <div className="flex items-center gap-1 text-sm text-gray-500">
                             <Clock className="w-3 h-3" />
                             <span>{new Date(review.created_at).toLocaleDateString()}</span>
@@ -365,7 +426,7 @@ const handleSubmitReview = async (rating: number, comment: string) => {
                         </div>
                         <div className="flex items-center gap-1">
                           <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-                          <span className="font-medium">{review.rating}.0</span>
+                          <span className="font-medium">{review.rating.toFixed(1)}</span>
                         </div>
                       </div>
                       <p className="mt-2 text-gray-700">{review.comment}</p>
