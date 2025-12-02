@@ -50,8 +50,8 @@ export default function AssistantDashboard() {
     urlYear && eligibleYears.some((y) => y.value === urlYear)
       ? urlYear
       : eligibleYears.length > 0
-      ? eligibleYears[0].value
-      : null
+        ? eligibleYears[0].value
+        : null
   );
   const [openSemester, setOpenSemester] = useState<string>(
     urlSemester && SEMESTERS.includes(urlSemester) ? urlSemester : SEMESTERS[0]
@@ -86,29 +86,29 @@ export default function AssistantDashboard() {
       .finally(() => setLoading(false));
   }, [openYear, openSemester]);
 
-   // Fetch assigned courses for the current user
-   useEffect(() => {
-     if (!user?.id) return;
+  // Fetch assigned courses for the current user
+  useEffect(() => {
+    if (!user?.id) return;
 
-     // Fetch assigned courses
-     fetch(`/assistant_courses/by_assistant/${user.id}`)
-       .then((res) => {
-         if (!res.ok) throw new Error("Failed to fetch assigned courses");
-         return res.json();
-       })
-       .then((courses) => {
-         // New response format: array of course objects with direct properties
-         const assignedCodes = courses.map((course: any) => course.code as string);
-         const specialCodes = courses
-           .filter((course: any) => course.special)
-           .map((course: any) => course.code as string);
-           
-         setAssignedCourses(new Set(assignedCodes));
-         setSelectedCourses(new Set(assignedCodes)); // Initialize selected with assigned
-         setSpecialCourses(new Set(specialCodes));
-       })
-       .catch((err) => console.error("Failed to fetch assigned courses:", err));
-   }, [user?.id]);
+    // Fetch assigned courses
+    fetch(`/assistant_courses/by_assistant/${user.id}`)
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to fetch assigned courses");
+        return res.json();
+      })
+      .then((courses) => {
+        // New response format: array of course objects with direct properties
+        const assignedCodes = courses.map((course: any) => course.code as string);
+        const specialCodes = courses
+          .filter((course: any) => course.special)
+          .map((course: any) => course.code as string);
+
+        setAssignedCourses(new Set(assignedCodes));
+        setSelectedCourses(new Set(assignedCodes)); // Initialize selected with assigned
+        setSpecialCourses(new Set(specialCodes));
+      })
+      .catch((err) => console.error("Failed to fetch assigned courses:", err));
+  }, [user?.id]);
 
   const toggleCourse = (code: string) => {
     setSelectedCourses((prev) => {
@@ -153,9 +153,16 @@ export default function AssistantDashboard() {
 
       if (response.ok) {
         const data = await response.json();
-        alert(
-          `Courses updated successfully! Added ${data.added_courses_count} courses, removed ${data.removed_courses_count} courses.`
-        );
+        let message = `Courses updated successfully! Added ${data.added_courses_count} courses, removed ${data.removed_courses_count} courses.`;
+
+        if (data.special_added_count > 0) {
+          message += ` Added ${data.special_added_count} special course${data.special_added_count !== 1 ? 's' : ''}.`;
+        }
+        if (data.special_removed_count > 0) {
+          message += ` Removed ${data.special_removed_count} special course${data.special_removed_count !== 1 ? 's' : ''}.`;
+        }
+
+        alert(message);
         setAssignedCourses(new Set(Array.from(selectedCourses)));
         setHasChanges(false);
         // Refresh to show updated state
@@ -164,8 +171,7 @@ export default function AssistantDashboard() {
         const errorData = await response.json();
         console.error("Server error:", errorData);
         alert(
-          `Error: ${
-            errorData.error || errorData.errors?.join(", ") || "Unknown error"
+          `Error: ${errorData.error || errorData.errors?.join(", ") || "Unknown error"
           }`
         );
       }
@@ -189,9 +195,8 @@ export default function AssistantDashboard() {
           eligibleYears.map((year) => (
             <div key={year.value}>
               <button
-                className={`w-full text-left font-semibold py-2 px-3 rounded hover:bg-blue-50 transition ${
-                  openYear === year.value ? "bg-blue-100 text-blue-700" : ""
-                }`}
+                className={`w-full text-left font-semibold py-2 px-3 rounded hover:bg-blue-50 transition ${openYear === year.value ? "bg-blue-100 text-blue-700" : ""
+                  }`}
                 onClick={() =>
                   setOpenYear(openYear === year.value ? null : year.value)
                 }
@@ -204,9 +209,8 @@ export default function AssistantDashboard() {
                   {SEMESTERS.map((sem) => (
                     <button
                       key={sem}
-                      className={`text-sm py-1 px-2 rounded hover:bg-blue-50 transition ${
-                        openSemester === sem ? "bg-blue-200 text-blue-800" : ""
-                      }`}
+                      className={`text-sm py-1 px-2 rounded hover:bg-blue-50 transition ${openSemester === sem ? "bg-blue-200 text-blue-800" : ""
+                        }`}
                       onClick={() => setOpenSemester(sem)}
                     >
                       {sem}
@@ -240,9 +244,9 @@ export default function AssistantDashboard() {
                       .filter(
                         (course) =>
                           course.year ===
-                            YEARS.find((y) => y.value === openYear)?.label &&
+                          YEARS.find((y) => y.value === openYear)?.label &&
                           course.semester ===
-                            SEMESTERS.indexOf(openSemester) + 1 &&
+                          SEMESTERS.indexOf(openSemester) + 1 &&
                           selectedCourses.has(course.code)
                       )
                       .map((course) => (
@@ -300,15 +304,14 @@ export default function AssistantDashboard() {
                 <h3 className="text-lg font-semibold mb-3 text-blue-700">
                   Available Courses{" "}
                   {Array.from(selectedCourses).length > 0 &&
-                    `(${
-                      courses.filter(
-                        (course) =>
-                          course.year ===
-                            YEARS.find((y) => y.value === openYear)?.label &&
-                          course.semester ===
-                            SEMESTERS.indexOf(openSemester) + 1 &&
-                          !selectedCourses.has(course.code)
-                      ).length
+                    `(${courses.filter(
+                      (course) =>
+                        course.year ===
+                        YEARS.find((y) => y.value === openYear)?.label &&
+                        course.semester ===
+                        SEMESTERS.indexOf(openSemester) + 1 &&
+                        !selectedCourses.has(course.code)
+                    ).length
                     } available)`}
                 </h3>
                 <div className="grid gap-3">
@@ -316,9 +319,9 @@ export default function AssistantDashboard() {
                     .filter(
                       (course) =>
                         course.year ===
-                          YEARS.find((y) => y.value === openYear)?.label &&
+                        YEARS.find((y) => y.value === openYear)?.label &&
                         course.semester ===
-                          SEMESTERS.indexOf(openSemester) + 1 &&
+                        SEMESTERS.indexOf(openSemester) + 1 &&
                         !selectedCourses.has(course.code)
                     )
                     .map((course) => (

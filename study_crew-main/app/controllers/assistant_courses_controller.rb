@@ -168,18 +168,31 @@ class AssistantCoursesController < ApplicationController
       end
 
       # Update special status for existing assignments
+      special_added = []
+      special_removed = []
       currently_assigned.each do |assignment|
         course_code = assignment.course.code
         should_be_special = special_course_codes.include?(course_code)
         if assignment.special != should_be_special
+          if should_be_special
+            special_added << course_code
+          else
+            special_removed << course_code
+          end
           assignment.update!(special: should_be_special)
         end
       end
+
+      # Count special courses in newly added assignments
+      newly_added_special = added_assignments.select(&:special).map { |ac| ac.course.code }
+      special_added.concat(newly_added_special)
 
       render json: {
         message: "Courses updated successfully",
         added_courses_count: added_assignments.size,
         removed_courses_count: removed_assignments.size,
+        special_added_count: special_added.size,
+        special_removed_count: special_removed.size,
         data: {
           added_assignments: added_assignments.map { |ac| ac.as_json(include: [ :assistant, :course ]) },
           removed_assignments: removed_assignments.map { |ac| ac.as_json(include: [ :assistant, :course ]) }
@@ -209,8 +222,11 @@ class AssistantCoursesController < ApplicationController
       render json: { error: "Assistant not found." }, status: :not_found
     else
       @assistant_courses = AssistantCourse.includes(:course).where(assistant_id: params[:assistant_id])
-      courses = @assistant_courses.map(&:course)
-      render json: courses
+      # Return courses with the special field from AssistantCourse
+      courses_with_special = @assistant_courses.map do |ac|
+        ac.course.as_json.merge(special: ac.special)
+      end
+      render json: courses_with_special
     end
   end
 
