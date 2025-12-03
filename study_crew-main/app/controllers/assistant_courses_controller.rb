@@ -260,12 +260,22 @@ class AssistantCoursesController < ApplicationController
     if course.nil?
       render json: { error: "Course not found." }, status: :not_found
     else
-      @assistant_courses = AssistantCourse.includes(:assistant).where(course_id: params[:course_id])
-      
-      # Extract the assistant from each AssistantCourse
-      assistants = @assistant_courses.map(&:assistant)
-      
-      render json: assistants
+      @assistant_courses = AssistantCourse.includes(:assistant, :course).where(course_id: params[:course_id])
+
+      # Group assistant courses by assistant and include their courses with special flags
+      assistants_with_courses = @assistant_courses.group_by(&:assistant).map do |assistant, acs|
+        courses = acs.map do |ac|
+          {
+            code: ac.course.code,
+            name: ac.course.name,
+            special: ac.special
+          }
+        end
+
+        assistant.as_json.merge(courses: courses)
+      end
+
+      render json: assistants_with_courses
     end
   end
 
