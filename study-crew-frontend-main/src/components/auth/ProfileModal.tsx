@@ -25,7 +25,7 @@ export default function ProfileModal() {
   const [success, setSuccess] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
-  const { user, role, updateUser } = useAuth();
+  const { user, hasRole, updateUser } = useAuth();
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(user?.profile_picture_url || null);
 
@@ -224,7 +224,7 @@ export default function ProfileModal() {
                 />
               </FormControl>
             </FormItem>
-            {role === 'assistant' && (
+            {hasRole('assistant') && (
               <FormField name="activity_status" control={form.control} render={({ field }) => (
                 <FormItem>
                   <FormLabel>Activity Status</FormLabel>

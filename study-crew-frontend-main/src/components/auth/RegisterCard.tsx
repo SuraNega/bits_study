@@ -14,18 +14,9 @@ const formSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
   email: z.string().email({ message: 'Please enter a valid email address.' }),
   password: z.string().min(8, { message: 'Password must be at least 8 characters.' }),
-  role: z.enum(['user', 'assistant'], { message: 'Please select a role.' }),
   academic_year: z.number().min(1).max(4, { message: 'Academic year must be between 1 and 4.' }),
   telegram_username: z.string().optional(),
   bio: z.string().max(70, { message: 'Bio must be at most 70 characters.' }).optional(),
-}).refine((data) => {
-  if (data.role === 'assistant') {
-    return data.academic_year > 1;
-  }
-  return true;
-}, {
-  message: '1st year students cannot register as assistants.',
-  path: ['academic_year'],
 });
 
 export default function RegisterCard() {
@@ -37,7 +28,6 @@ export default function RegisterCard() {
       name: '',
       email: '',
       password: '',
-      role: 'user',
       academic_year: 1,
       telegram_username: '',
       bio: '',
@@ -47,6 +37,7 @@ export default function RegisterCard() {
 
   const bioValue = form.watch("bio");
   const remainingChars = 70 - (bioValue?.length || 0);
+  const academicYear = form.watch("academic_year");
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setLoading(true);
@@ -61,10 +52,10 @@ export default function RegisterCard() {
             email: values.email,
             password: values.password,
             password_confirmation: values.password,
-            role: values.role,
             academic_year: values.academic_year,
             telegram_username: values.telegram_username || null,
             bio: values.bio || null,
+            // Note: roles are auto-assigned by backend based on academic_year
           },
         }),
       });
@@ -121,23 +112,6 @@ export default function RegisterCard() {
                 <FormMessage />
               </FormItem>
             )} />
-            <FormField name="role" control={form.control} render={({ field }) => (
-              <FormItem>
-                <FormLabel>Role</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a role" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="user">Student</SelectItem>
-                    <SelectItem value="assistant">Assistant</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )} />
             <FormField name="academic_year" control={form.control} render={({ field }) => (
               <FormItem>
                 <FormLabel>Academic Year</FormLabel>
@@ -154,6 +128,16 @@ export default function RegisterCard() {
                     <SelectItem value="4">4th Year</SelectItem>
                   </SelectContent>
                 </Select>
+                {academicYear >= 2 && (
+                  <FormDescription className="text-green-600">
+                    ✓ You'll be able to help other students as an Assistant!
+                  </FormDescription>
+                )}
+                {academicYear === 1 && (
+                  <FormDescription className="text-muted-foreground">
+                    As a 1st year student, you can find assistants to help you.
+                  </FormDescription>
+                )}
                 <FormMessage />
               </FormItem>
             )} />
@@ -198,3 +182,4 @@ export default function RegisterCard() {
     </Card>
   );
 }
+

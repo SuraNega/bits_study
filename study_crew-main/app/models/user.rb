@@ -40,11 +40,44 @@ class User < ApplicationRecord
 
     validates :name, presence: true
     validates :email, uniqueness: true
-    validates :role, presence: true, inclusion: { in: %w[ user assistant ] }
     validates :academic_year, presence: true
     validates :password, presence: true, length: { minimum: 8 }, on: :create
     validates :bio, length: { maximum: 70 }, allow_blank: true
+    validates :active_role, inclusion: { in: %w[ user assistant ] }, allow_nil: true
     validate :current_password_must_be_correct, if: -> { password.present? && persisted? }
+    validate :valid_roles
+
+    # Set default roles before create
+    before_validation :set_default_roles, on: :create
+
+    # Parse roles from JSON
+    def roles
+      return ["user"] if self[:roles].blank?
+      JSON.parse(self[:roles]) rescue ["user"]
+    end
+
+    # Set roles as JSON
+    def roles=(value)
+      self[:roles] = value.is_a?(Array) ? value.to_json : value
+    end
+
+    # Check if user has a specific role
+    def has_role?(role_name)
+      roles.include?(role_name.to_s)
+    end
+
+    # Check if user can be an assistant (2nd year or above)
+    def can_be_assistant?
+      academic_year.to_i >= 2
+    end
+
+    def assistant?
+      has_role?("assistant")
+    end
+
+    def user?
+      has_role?("user")
+    end
 
     # Returns relative URL path to the profile picture if attached
     def profile_picture_url
@@ -60,16 +93,42 @@ class User < ApplicationRecord
       end
     end
 
-    def assistant?
-        role == "assistant"
-    end
-
-    def user?
-      role == "user"
-    end
-
-    # Override as_json to include profile_picture_url
+    # Override as_json to include roles and active_role
     def as_json(options = {})
-      super(options).merge(profile_picture_url: profile_picture_url)
+      super(options).merge(
+        profile_picture_url: profile_picture_url,
+        roles: roles,
+        active_role: active_role
+      )
+    end
+
+    private
+
+    def set_default_roles
+      return if self[:roles].present?
+      
+      if can_be_assistant?
+        # 2nd year and above get both roles
+        self.roles = ["user", "assistant"]
+        self.active_role ||= "user"
+      else
+        # 1st year only gets user role
+        self.roles = ["user"]
+        self.active_role = "user"
+      end
+    end
+
+    def valid_roles
+      return if roles.blank?
+      
+      invalid_roles = roles - ["user", "assistant"]
+      if invalid_roles.any?
+        errors.add(:roles, "contains invalid roles: #{invalid_roles.join(', ')}")
+      end
+
+      if roles.include?("assistant") && !can_be_assistant?
+        errors.add(:roles, "1st year students cannot be assistants")
+      end
     end
 end
+

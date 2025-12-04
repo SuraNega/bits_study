@@ -10,6 +10,13 @@ import {
 import { useAuthModal } from "@/components/context/AuthModalContext";
 import { useAuth } from "@/components/context/AuthContext";
 import ProfileModal from "@/components/auth/ProfileModal";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ChevronDown } from "lucide-react";
 
 const navigation = [
   { name: "Home", href: "/" },
@@ -19,8 +26,18 @@ const navigation = [
 
 export function Navbar() {
   const { openModal } = useAuthModal();
-  const { role, user, logout } = useAuth();
+  const { roles, activeRole, setActiveRole, hasRole, user, logout } = useAuth();
   const navigate = useNavigate();
+
+  const handleRoleSwitch = async (newRole: "user" | "assistant") => {
+    await setActiveRole(newRole);
+    if (newRole === "assistant") {
+      navigate("/dashboard/assistant");
+    } else {
+      navigate("/dashboard/user");
+    }
+  };
+
   return (
     <header className="bg-white border-b border-gray-100 sticky top-0 z-50">
       <div className="w-full px-4 sm:px-6 lg:px-8">
@@ -49,24 +66,25 @@ export function Navbar() {
                   </Link>
                 </NavigationMenuItem>
               ))}
-              {role === "assistant" && (
+              {/* Show dashboard links based on roles */}
+              {hasRole("user") && (
+                <NavigationMenuItem>
+                  <Link to="/dashboard/user">
+                    <NavigationMenuLink
+                      className={navigationMenuTriggerStyle()}
+                    >
+                      Student Dashboard
+                    </NavigationMenuLink>
+                  </Link>
+                </NavigationMenuItem>
+              )}
+              {hasRole("assistant") && (
                 <NavigationMenuItem>
                   <Link to="/dashboard/assistant">
                     <NavigationMenuLink
                       className={navigationMenuTriggerStyle()}
                     >
                       Assistant Dashboard
-                    </NavigationMenuLink>
-                  </Link>
-                </NavigationMenuItem>
-              )}
-              {role === "user" && (
-                <NavigationMenuItem>
-                  <Link to="/dashboard/user">
-                    <NavigationMenuLink
-                      className={navigationMenuTriggerStyle()}
-                    >
-                      User Dashboard
                     </NavigationMenuLink>
                   </Link>
                 </NavigationMenuItem>
@@ -79,7 +97,7 @@ export function Navbar() {
               <>
                 <span className="text-gray-700 font-medium flex items-center gap-2">
                   Hi, {user.name || user.email}
-                  {role === "assistant" && user.activity_status && (
+                  {activeRole === "assistant" && user.activity_status && (
                     <span
                       className={`inline-block w-2 h-2 rounded-full ${
                         user.activity_status === "available"
@@ -93,6 +111,39 @@ export function Navbar() {
                     ></span>
                   )}
                 </span>
+                
+                {/* Role Switcher - only show if user has multiple roles */}
+                {roles.length > 1 && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm" className="gap-1">
+                        {activeRole === "assistant" ? "Assistant" : "Student"}
+                        <ChevronDown className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem 
+                        onClick={() => handleRoleSwitch("user")}
+                        className={activeRole === "user" ? "bg-green-50" : ""}
+                      >
+                        <span className="flex items-center gap-2">
+                          {activeRole === "user" && <span className="text-green-600">✓</span>}
+                          Student Mode
+                        </span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onClick={() => handleRoleSwitch("assistant")}
+                        className={activeRole === "assistant" ? "bg-green-50" : ""}
+                      >
+                        <span className="flex items-center gap-2">
+                          {activeRole === "assistant" && <span className="text-green-600">✓</span>}
+                          Assistant Mode
+                        </span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+                
                 <ProfileModal />
                 <Button
                   variant="outline"
@@ -128,3 +179,4 @@ export function Navbar() {
     </header>
   );
 }
+

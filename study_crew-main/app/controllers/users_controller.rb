@@ -56,7 +56,8 @@ class UsersController < ApplicationController
 
   def user_params
     # Adjust permitted params as needed
-    params.require(:user).permit(:name, :email, :password, :password_confirmation, :current_password, :role, :academic_year, :telegram_username, :bio, :activity_status, :profile_picture)
+    # Note: role is removed - roles are auto-assigned based on academic_year
+    params.require(:user).permit(:name, :email, :password, :password_confirmation, :current_password, :academic_year, :telegram_username, :bio, :activity_status, :profile_picture, :active_role)
   end
 
   def authorize_assistant

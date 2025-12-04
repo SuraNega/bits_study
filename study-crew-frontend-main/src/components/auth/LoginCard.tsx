@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Link } from 'react-router-dom';
 import { useAuthModal } from '@/components/context/AuthModalContext';
 import { useAuth } from '@/components/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -24,34 +23,45 @@ export default function LoginCard() {
     },
   });
   const { openModal, closeModal, intent } = useAuthModal();
-  const { login, loading, error, role } = useAuth();
+  const { login, loading, error } = useAuth();
   const navigate = useNavigate();
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     const success = await login(values.email, values.password);
     if (success) {
       closeModal();
-      if (intent === 'assistant') {
-      // Find first eligible year and semester
+      
+      // Get the stored user to check roles and active_role
       const storedUser = localStorage.getItem("user");
+      let activeRole = "user";
       let academicYear = 1;
+      
       if (storedUser) {
         try {
           const parsed = JSON.parse(storedUser);
-          if (parsed.academic_year) academicYear = parsed.academic_year;
+          activeRole = parsed.active_role || "user";
+          academicYear = parsed.academic_year || 1;
         } catch {}
       }
-      const eligibleYears = [1,2,3,4].filter(y => y < academicYear);
-      if (eligibleYears.length > 0) {
-        // Always use "Semester 1" as default
-        navigate(`/dashboard/assistant?year=${eligibleYears[0]}&semester=Semester%201`);
+      
+      // Handle intent-based navigation
+      if (intent === 'assistant') {
+        const eligibleYears = [1,2,3,4].filter(y => y < academicYear);
+        if (eligibleYears.length > 0) {
+          navigate(`/dashboard/assistant?year=${eligibleYears[0]}&semester=Semester%201`);
+        } else {
+          navigate('/dashboard/assistant');
+        }
+      } else if (intent === 'user') {
+        navigate('/dashboard/user');
       } else {
-        navigate('/dashboard/assistant'); // will show error message
+        // Navigate based on active_role
+        if (activeRole === 'assistant') {
+          navigate('/dashboard/assistant');
+        } else {
+          navigate('/dashboard/user');
+        }
       }
-    }
-      else if (intent === 'user') navigate('/dashboard/user');
-      else if (role === 'assistant') navigate('/dashboard/assistant');
-      else navigate('/dashboard/user');
     }
   }
 
@@ -102,3 +112,4 @@ export default function LoginCard() {
     </Card>
   );
 }
+
