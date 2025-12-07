@@ -50,8 +50,8 @@ export default function AssistantDashboard() {
     urlYear && eligibleYears.some((y) => y.value === urlYear)
       ? urlYear
       : eligibleYears.length > 0
-        ? eligibleYears[0].value
-        : null
+      ? eligibleYears[0].value
+      : null
   );
   const [openSemester, setOpenSemester] = useState<string>(
     urlSemester && SEMESTERS.includes(urlSemester) ? urlSemester : SEMESTERS[0]
@@ -65,10 +65,10 @@ export default function AssistantDashboard() {
   const [assignedCourses, setAssignedCourses] = useState<Set<string>>(
     new Set()
   );
-  const [specialCourses, setSpecialCourses] = useState<Set<string>>(
-    new Set()
-  );
+  const [specialCourses, setSpecialCourses] = useState<Set<string>>(new Set());
   const [hasChanges, setHasChanges] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
 
   useEffect(() => {
     if (!openYear || !openSemester) return;
@@ -86,6 +86,18 @@ export default function AssistantDashboard() {
       .finally(() => setLoading(false));
   }, [openYear, openSemester]);
 
+  // Check for success message after reload
+  useEffect(() => {
+    const savedMessage = localStorage.getItem('courseUpdateMessage');
+    if (savedMessage) {
+      setSuccessMessage(savedMessage);
+      setShowSuccessModal(true);
+      localStorage.removeItem('courseUpdateMessage');
+      // Auto-hide after 5 seconds
+      setTimeout(() => setShowSuccessModal(false), 5000);
+    }
+  }, []);
+
   // Fetch assigned courses for the current user
   useEffect(() => {
     if (!user?.id) return;
@@ -98,7 +110,9 @@ export default function AssistantDashboard() {
       })
       .then((courses) => {
         // New response format: array of course objects with direct properties
-        const assignedCodes = courses.map((course: any) => course.code as string);
+        const assignedCodes = courses.map(
+          (course: any) => course.code as string
+        );
         const specialCodes = courses
           .filter((course: any) => course.special)
           .map((course: any) => course.code as string);
@@ -131,7 +145,6 @@ export default function AssistantDashboard() {
     });
   };
 
-
   const handleUpdateCourses = async () => {
     try {
       // For course updates, send empty availability updates
@@ -156,22 +169,26 @@ export default function AssistantDashboard() {
         let message = `Courses updated successfully! Added ${data.added_courses_count} courses, removed ${data.removed_courses_count} courses.`;
 
         if (data.special_added_count > 0) {
-          message += ` Added ${data.special_added_count} special course${data.special_added_count !== 1 ? 's' : ''}.`;
+          message += ` Added ${data.special_added_count} special course${
+            data.special_added_count !== 1 ? "s" : ""
+          }.`;
         }
         if (data.special_removed_count > 0) {
-          message += ` Removed ${data.special_removed_count} special course${data.special_removed_count !== 1 ? 's' : ''}.`;
+          message += ` Removed ${data.special_removed_count} special course${
+            data.special_removed_count !== 1 ? "s" : ""
+          }.`;
         }
 
-        alert(message);
-        setAssignedCourses(new Set(Array.from(selectedCourses)));
-        setHasChanges(false);
+        // Store message in localStorage before reload
+        localStorage.setItem('courseUpdateMessage', message);
         // Refresh to show updated state
         window.location.reload();
       } else {
         const errorData = await response.json();
         console.error("Server error:", errorData);
         alert(
-          `Error: ${errorData.error || errorData.errors?.join(", ") || "Unknown error"
+          `Error: ${
+            errorData.error || errorData.errors?.join(", ") || "Unknown error"
           }`
         );
       }
@@ -180,8 +197,6 @@ export default function AssistantDashboard() {
       alert(`An error occurred while updating courses: ${error.message}`);
     }
   };
-
-
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -195,8 +210,9 @@ export default function AssistantDashboard() {
           eligibleYears.map((year) => (
             <div key={year.value}>
               <button
-                className={`w-full text-left font-semibold py-2 px-3 rounded hover:bg-blue-50 transition ${openYear === year.value ? "bg-blue-100 text-blue-700" : ""
-                  }`}
+                className={`w-full text-left font-semibold py-2 px-3 rounded hover:bg-blue-50 transition ${
+                  openYear === year.value ? "bg-blue-100 text-blue-700" : ""
+                }`}
                 onClick={() =>
                   setOpenYear(openYear === year.value ? null : year.value)
                 }
@@ -209,8 +225,9 @@ export default function AssistantDashboard() {
                   {SEMESTERS.map((sem) => (
                     <button
                       key={sem}
-                      className={`text-sm py-1 px-2 rounded hover:bg-blue-50 transition ${openSemester === sem ? "bg-blue-200 text-blue-800" : ""
-                        }`}
+                      className={`text-sm py-1 px-2 rounded hover:bg-blue-50 transition ${
+                        openSemester === sem ? "bg-blue-200 text-blue-800" : ""
+                      }`}
                       onClick={() => setOpenSemester(sem)}
                     >
                       {sem}
@@ -224,6 +241,28 @@ export default function AssistantDashboard() {
       </aside>
       {/* Main Content */}
       <main className="flex-1 flex flex-col p-8 gap-6 relative">
+        {/* Success Notification Banner */}
+        {showSuccessModal && (
+          <div className="bg-green-500 text-white px-6 py-4 rounded-lg shadow-lg mb-4 flex items-center justify-between animate-fade-in">
+            <div className="flex items-center">
+              <svg className="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              <div>
+                <span className="font-semibold">Success!</span>
+                <span className="ml-2">{successMessage}</span>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowSuccessModal(false)}
+              className="ml-4 text-white hover:text-green-100 transition-colors"
+            >
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        )}
         <h2 className="text-2xl font-bold mb-4">
           Courses for {YEARS.find((y) => y.value === openYear)?.label} -{" "}
           {openSemester}
@@ -244,9 +283,9 @@ export default function AssistantDashboard() {
                       .filter(
                         (course) =>
                           course.year ===
-                          YEARS.find((y) => y.value === openYear)?.label &&
+                            YEARS.find((y) => y.value === openYear)?.label &&
                           course.semester ===
-                          SEMESTERS.indexOf(openSemester) + 1 &&
+                            SEMESTERS.indexOf(openSemester) + 1 &&
                           selectedCourses.has(course.code)
                       )
                       .map((course) => (
@@ -304,14 +343,15 @@ export default function AssistantDashboard() {
                 <h3 className="text-lg font-semibold mb-3 text-blue-700">
                   Available Courses{" "}
                   {Array.from(selectedCourses).length > 0 &&
-                    `(${courses.filter(
-                      (course) =>
-                        course.year ===
-                        YEARS.find((y) => y.value === openYear)?.label &&
-                        course.semester ===
-                        SEMESTERS.indexOf(openSemester) + 1 &&
-                        !selectedCourses.has(course.code)
-                    ).length
+                    `(${
+                      courses.filter(
+                        (course) =>
+                          course.year ===
+                            YEARS.find((y) => y.value === openYear)?.label &&
+                          course.semester ===
+                            SEMESTERS.indexOf(openSemester) + 1 &&
+                          !selectedCourses.has(course.code)
+                      ).length
                     } available)`}
                 </h3>
                 <div className="grid gap-3">
@@ -319,9 +359,9 @@ export default function AssistantDashboard() {
                     .filter(
                       (course) =>
                         course.year ===
-                        YEARS.find((y) => y.value === openYear)?.label &&
+                          YEARS.find((y) => y.value === openYear)?.label &&
                         course.semester ===
-                        SEMESTERS.indexOf(openSemester) + 1 &&
+                          SEMESTERS.indexOf(openSemester) + 1 &&
                         !selectedCourses.has(course.code)
                     )
                     .map((course) => (
@@ -332,9 +372,7 @@ export default function AssistantDashboard() {
                       >
                         <div className="flex flex-col md:flex-row gap-2 md:gap-8 items-start md:items-center w-full">
                           <div className="flex items-center gap-2 w-full md:w-1/3">
-                            <span className="font-semibold">
-                              {course.name}
-                            </span>
+                            <span className="font-semibold">{course.name}</span>
                             <button
                               onClick={(e) => toggleSpecial(course.code, e)}
                               className="text-xl hover:scale-110 transition-transform"
@@ -389,11 +427,9 @@ export default function AssistantDashboard() {
               </span>
             )}
           </div>
-          <div className="flex space-x-3">
-          </div>
+          <div className="flex space-x-3"></div>
         </div>
       </main>
-
     </div>
   );
 }
