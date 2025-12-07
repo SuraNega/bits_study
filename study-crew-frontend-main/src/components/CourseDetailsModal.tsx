@@ -365,7 +365,7 @@ export default function CourseDetailsModal({
               </h2>
               
               <div className="flex items-center gap-2">
-                {(filters.availability !== 'all' || filters.specialCourse !== 'all' || filters.minRating > 0) && (
+                {(filters.availability !== 'all' || filters.specialCourse || filters.minRating > 0) && (
                   <div className="flex flex-wrap gap-2">
                     {filters.availability !== 'all' && (
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
@@ -483,7 +483,7 @@ export default function CourseDetailsModal({
                     onClick={() => {
                       setFilters({
                         availability: 'all',
-                        specialCourse: 'all',
+                        specialCourse: false,
                         minRating: 0
                       });
                     }}
