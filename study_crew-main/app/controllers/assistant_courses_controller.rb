@@ -264,6 +264,9 @@ class AssistantCoursesController < ApplicationController
 
       # Group assistant courses by assistant and include their courses with special flags
       assistants_with_courses = @assistant_courses.group_by(&:assistant).map do |assistant, acs|
+        # Skip current user if they are in student mode
+        next if current_user && assistant.id == current_user.id && current_user.active_role == "user"
+
         courses = acs.map do |ac|
           {
             code: ac.course.code,
@@ -273,7 +276,7 @@ class AssistantCoursesController < ApplicationController
         end
 
         assistant.as_json.merge(courses: courses)
-      end
+      end.compact
 
       render json: assistants_with_courses
     end
