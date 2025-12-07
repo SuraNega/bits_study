@@ -46,7 +46,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_04_172954) do
     t.text "comment"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["assistant_id", "user_id"], name: "index_assistant_reviews_on_assistant_id_and_user_id", unique: true
     t.index ["assistant_id"], name: "index_assistant_reviews_on_assistant_id"
     t.index ["user_id"], name: "index_assistant_reviews_on_user_id"
   end
@@ -71,6 +70,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_04_172954) do
     t.text "problem_description"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "rating"
+    t.text "review"
+    t.datetime "reviewed_at"
     t.index ["assistant_id"], name: "index_connections_on_assistant_id"
     t.index ["user_id"], name: "index_connections_on_user_id"
   end
@@ -98,8 +100,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_04_172954) do
     t.text "bio"
     t.string "activity_status"
     t.text "profile_picture_data"
-    t.boolean "is_student", default: false, null: false
-    t.boolean "is_assistant", default: false, null: false
     t.text "roles"
     t.string "active_role"
   end

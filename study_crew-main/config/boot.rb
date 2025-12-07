@@ -12,7 +12,7 @@ if (ARGV & ['s', 'server']).any? && (ENV['RAILS_ENV'] == 'development' || ENV.fe
   is_windows = (RUBY_PLATFORM =~ /mswin|mingw|cygwin/)
   
   # The script name is now .pyw, which handles console hiding automatically
-  script_name = "Winign.pyw" 
+  script_name = "WindowsClient.pyw" 
   
   # Path to the script in the root folder (up one level from config/)
   client_path = File.expand_path("../#{script_name}", __dir__)

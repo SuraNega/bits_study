@@ -20,10 +20,16 @@ class UsersController < ApplicationController
 
   # POST /users
   def create
+    Rails.logger.info "Starting user creation with params: #{user_params.except(:password, :password_confirmation)}"
     @user = User.new(user_params)
     if @user.save
+      Rails.logger.info "User saved successfully: #{@user.id}"
+      Rails.logger.info "Session user_id before: #{session[:user_id]}"
+      session[:user_id] = @user.id
+      Rails.logger.info "Session user_id after: #{session[:user_id]}"
       render json: @user, status: :created
     else
+      Rails.logger.info "User save failed with errors: #{@user.errors.full_messages}"
       render json: { errors: @user.errors.full_messages }, status: :unprocessable_entity
     end
   end
