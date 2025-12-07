@@ -12,7 +12,6 @@ import { useAuthModal } from "@/components/context/AuthModalContext";
 
 export default function HomePage() {
   const navigate = useNavigate();
-  const { role } = useAuth();
   const { openModal } = useAuthModal();
 
   return (
