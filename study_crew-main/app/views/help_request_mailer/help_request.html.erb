@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta content='text/html; charset=UTF-8' http-equiv='Content-Type' />
+  </head>
+  <body>
+    <h1>Help Request for <%= @course.code %>: <%= @course.name %></h1>
+
+    <p>Dear <%= @assistant.name %>,</p>
+
+    <p>You have received a help request from <%= @requester.name %> (<%= @requester.email %>) for the course <%= @course.code %>: <%= @course.name %>.</p>
+
+    <p><strong>Requester Details:</strong></p>
+    <ul>
+      <li>Name: <%= @requester.name %></li>
+      <li>Email: <%= @requester.email %></li>
+      <li>Academic Year: <%= @requester.academic_year %></li>
+      <% if @requester.telegram_username.present? %>
+      <li>Telegram: <%= @requester.telegram_username %></li>
+      <% end %>
+    </ul>
+
+    <p><strong>Course Details:</strong></p>
+    <ul>
+      <li>Code: <%= @course.code %></li>
+      <li>Name: <%= @course.name %></li>
+      <li>Year: <%= @course.year %></li>
+      <li>Semester: <%= @course.semester %></li>
+      <li>Credit Hours: <%= @course.credit_hour %></li>
+    </ul>
+
+    <p>Please reach out to the student to provide assistance.</p>
+
+    <p>Best regards,<br>
+    Study Crew Team</p>
+  </body>
+</html>

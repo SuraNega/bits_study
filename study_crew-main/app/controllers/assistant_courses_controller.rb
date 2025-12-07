@@ -288,6 +288,54 @@ class AssistantCoursesController < ApplicationController
     render json: @special_courses.as_json(include: [ :assistant, :course ])
   end
 
+  # POST /assistant_courses/request_help
+  def request_help
+    assistant_id = params[:assistant_id]
+    course_id = params[:course_id]
+
+    Rails.logger.info "Help request initiated - assistant_id: #{assistant_id}, course_id: #{course_id}, user_id: #{current_user&.id}"
+
+    # Validate current user
+    unless current_user
+      Rails.logger.warn "Help request failed: User not authenticated"
+      render json: { error: "You must be logged in to request help." }, status: :unauthorized
+      return
+    end
+
+    # Find assistant
+    assistant = User.find_by(id: assistant_id)
+    unless assistant&.assistant?
+      Rails.logger.warn "Help request failed: Invalid assistant #{assistant_id}"
+      render json: { error: "Assistant not found." }, status: :not_found
+      return
+    end
+
+    # Find course
+    course = Course.find_by(id: course_id)
+    unless course
+      Rails.logger.warn "Help request failed: Invalid course #{course_id}"
+      render json: { error: "Course not found." }, status: :not_found
+      return
+    end
+
+    # Check if assistant is assigned to this course
+    unless AssistantCourse.exists?(assistant_id: assistant_id, course_id: course_id)
+      Rails.logger.warn "Help request failed: Assistant #{assistant_id} not assigned to course #{course_id}"
+      render json: { error: "Assistant is not assigned to this course." }, status: :unprocessable_entity
+      return
+    end
+
+    # Send email asynchronously
+    begin
+      HelpRequestMailer.help_request(assistant, current_user, course).deliver_later
+      Rails.logger.info "Help request email queued successfully for assistant #{assistant.email}"
+      render json: { message: "Help request sent successfully. The assistant will contact you soon." }, status: :ok
+    rescue => e
+      Rails.logger.error "Failed to send help request email: #{e.message}"
+      render json: { error: "Failed to send help request. Please try again." }, status: :internal_server_error
+    end
+  end
+
   private
 
   def set_assistant_course

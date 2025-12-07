@@ -20,6 +20,7 @@ Rails.application.routes.draw do
   get "/assistant_courses/assignment_details/:assistant_id/:course_id", to: "assistant_courses#assignment_details"
   get "/assistant_courses/special", to: "assistant_courses#special"
   post "/assistant_courses/bulk_update_with_availability", to: "assistant_courses#bulk_update_with_availability"
+  post "/assistant_courses/request_help", to: "assistant_courses#request_help"
 
   post "/login", to: "sessions#create"
   delete "/logout", to: "sessions#destroy"

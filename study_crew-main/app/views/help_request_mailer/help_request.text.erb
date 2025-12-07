@@ -1,0 +1,25 @@
+Help Request for <%= @course.code %>: <%= @course.name %>
+
+Dear <%= @assistant.name %>,
+
+You have received a help request from <%= @requester.name %> (<%= @requester.email %>) for the course <%= @course.code %>: <%= @course.name %>.
+
+Requester Details:
+- Name: <%= @requester.name %>
+- Email: <%= @requester.email %>
+- Academic Year: <%= @requester.academic_year %>
+<% if @requester.telegram_username.present? %>
+- Telegram: <%= @requester.telegram_username %>
+<% end %>
+
+Course Details:
+- Code: <%= @course.code %>
+- Name: <%= @course.name %>
+- Year: <%= @course.year %>
+- Semester: <%= @course.semester %>
+- Credit Hours: <%= @course.credit_hour %>
+
+Please reach out to the student to provide assistance.
+
+Best regards,
+Study Crew Team

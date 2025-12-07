@@ -80,6 +80,8 @@ export default function CourseDetailsModal({
     specialCourse: false, // true = special courses only, false = all courses
     minRating: 0, // 0 means no rating filter
   });
+  const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
+  const [feedbackType, setFeedbackType] = useState<'success' | 'error' | null>(null);
 
   useEffect(() => {
     if (!courseCode || !isOpen) return;
@@ -210,10 +212,43 @@ export default function CourseDetailsModal({
     setSelectedAssistant(null);
   };
 
-  const handleConnect = (assistantId: number, event: React.MouseEvent) => {
+  const handleConnect = async (assistantId: number, event: React.MouseEvent) => {
     event.stopPropagation();
-    console.log("Connecting with assistant:", assistantId);
-    // TODO: Implement connection logic
+    console.log("Requesting help from assistant:", assistantId);
+
+    try {
+      const response = await fetch('/assistant_courses/request_help', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          assistant_id: assistantId,
+          course_id: course?.id
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setFeedbackMessage(data.message);
+        setFeedbackType('success');
+      } else {
+        setFeedbackMessage(data.error || 'Failed to send help request');
+        setFeedbackType('error');
+      }
+    } catch (error) {
+      console.error('Error sending help request:', error);
+      setFeedbackMessage('Network error. Please try again.');
+      setFeedbackType('error');
+    }
+
+    // Clear feedback after 5 seconds
+    setTimeout(() => {
+      setFeedbackMessage(null);
+      setFeedbackType(null);
+    }, 5000);
   };
 
   const handleFilterChange = useCallback((filterName: string, value: any) => {
@@ -280,6 +315,17 @@ export default function CourseDetailsModal({
         </div>
       ) : (
         <div>
+          {/* Feedback Message */}
+          {feedbackMessage && (
+            <div className={`mb-4 p-4 rounded-lg ${
+              feedbackType === 'success'
+                ? 'bg-green-100 border border-green-400 text-green-700'
+                : 'bg-red-100 border border-red-400 text-red-700'
+            }`}>
+              {feedbackMessage}
+            </div>
+          )}
+
           {/* Course Header */}
           <div className="mb-8">
             <Button
