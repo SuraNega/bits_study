@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { useAuthModal } from '@/components/context/AuthModalContext';
+import { useAuth } from '@/components/context/AuthContext';
 import { useState } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
@@ -34,6 +35,7 @@ export default function RegisterCard() {
     },
   });
   const { openModal, closeModal } = useAuthModal();
+  const { login } = useAuth();
 
   const bioValue = form.watch("bio");
   const remainingChars = 70 - (bioValue?.length || 0);
@@ -46,6 +48,7 @@ export default function RegisterCard() {
       const res = await fetch('http://localhost:3000/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           user: {
             name: values.name,
@@ -67,8 +70,14 @@ export default function RegisterCard() {
 
       const data = await res.json();
       console.log('Registration successful:', data);
-      closeModal();
-      // Optionally, you could automatically log them in or show a success message
+
+      // Automatically log the user in after successful registration
+      const loginSuccess = await login(values.email, values.password);
+      if (loginSuccess) {
+        closeModal();
+      } else {
+        setError('Registration successful, but login failed. Please try signing in manually.');
+      }
     } catch (err: any) {
       setError(err.message || 'Registration failed');
     } finally {
@@ -182,4 +191,5 @@ export default function RegisterCard() {
     </Card>
   );
 }
+
 

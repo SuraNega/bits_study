@@ -6,7 +6,9 @@ class HelpRequestMailer < ApplicationMailer
 
     mail(
       to: @assistant.email,
-      subject: "Help Request for #{course.code}: #{course.name}"
+      subject: "Help Request for #{course.code}: #{course.name}",
+      from: %{"#{@requester.name}" <#{ENV["GMAIL_USERNAME"]}>},
+      reply_to: @requester.email
     )
   end
 end
