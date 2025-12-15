@@ -13,10 +13,8 @@ export function MainLayout({ children }: MainLayoutProps) {
     <div className="min-h-screen bg-background w-full">
       <Navbar />
       
-      <main className="w-full px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          {children}
-        </div>
+      <main className="w-full">
+        {children}
       </main>
     </div>
   );

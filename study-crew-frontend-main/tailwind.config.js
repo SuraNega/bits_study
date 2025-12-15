@@ -9,6 +9,20 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        green: {
+          50: '#f8fcef',
+          100: '#edf7d8',
+          200: '#d8efb5',
+          300: '#c1e588',
+          400: '#a7d86a',
+          500: '#8ec95a',
+          600: '#73b447',
+          700: '#5a9336',
+          800: '#47732c',
+          900: '#385a24',
+          950: '#1c2f10',
+          DEFAULT: '#8ec95a',
+        },
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',
