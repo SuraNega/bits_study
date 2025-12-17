@@ -9,7 +9,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDes
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/components/context/AuthContext';
 import { useState, useEffect, useRef } from 'react';
-import { User, Camera, AtSign, Activity, Lock } from 'lucide-react';
+import { User, Camera, AtSign, Activity, Lock, Mail, CheckCircle2, Clock, MinusCircle } from 'lucide-react';
 import ChangePasswordModal from './ChangePasswordModal';
 
 const formSchema = z.object({
@@ -232,6 +232,19 @@ export default function ProfileModal() {
             </div>
 
             <div className="grid gap-4">
+              {/* Email Field - Read Only */}
+              <FormItem>
+                <FormLabel className="text-gray-700 font-semibold text-sm">Email Address</FormLabel>
+                <div className="relative group">
+                  <Mail className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                  <Input 
+                    value={user?.email || ''} 
+                    disabled 
+                    className="pl-10 text-gray-500 bg-gray-100 border-gray-200 cursor-not-allowed" 
+                  />
+                </div>
+              </FormItem>
+
               {/* Name Field */}
               <FormField name="name" control={form.control} render={({ field }) => (
                 <FormItem>
@@ -249,7 +262,7 @@ export default function ProfileModal() {
               {/* Telegram */}
               <FormField name="telegram_username" control={form.control} render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-gray-700 font-semibold text-sm">Telegram Username</FormLabel>
+                  <FormLabel className="text-gray-700 font-semibold text-sm">Telegram Username (optional)</FormLabel>
                    <div className="relative group">
                       <AtSign className="absolute left-3 top-2.5 h-4 w-4 text-gray-400 group-focus-within:text-[#8fc95d] transition-colors" />
                       <FormControl>
@@ -263,7 +276,7 @@ export default function ProfileModal() {
                {/* Bio */}
               <FormField name="bio" control={form.control} render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-gray-700 font-semibold text-sm">Bio</FormLabel>
+                  <FormLabel className="text-gray-700 font-semibold text-sm">Bio (optional)</FormLabel>
                   <FormControl>
                     <Textarea 
                       placeholder="Tell us a bit about yourself..." 
@@ -288,31 +301,33 @@ export default function ProfileModal() {
                     <FormLabel className="text-gray-700 font-semibold text-sm">Availability Status</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
-                        <SelectTrigger className="focus:ring-[#8fc95d] border-gray-200 bg-gray-50/50 hover:bg-white">
+                        <SelectTrigger className="focus:ring-[#8fc95d] border-gray-200 bg-gray-50/50 hover:bg-white h-11 transition-all duration-200">
                           <div className="flex items-center gap-2">
-                            <Activity className="h-4 w-4 text-gray-500" />
-                            <SelectValue placeholder="Set your status" />
+                             <Activity className="h-4 w-4 text-gray-500" />
+                             <SelectValue placeholder="Set your status" />
                           </div>
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent>
-                        <SelectItem value="available">
-                          <span className="flex items-center gap-2">
-                            <span className="h-2.5 w-2.5 rounded-full bg-green-500 shadow-sm" /> 
-                            <span className="font-medium text-green-700">Available</span>
-                          </span>
+                      <SelectContent className="bg-white border-gray-100 shadow-lg rounded-xl">
+                        <SelectItem value="available" className="focus:bg-green-50 focus:text-green-900 cursor-pointer py-3">
+                          <div className="flex items-center gap-3">
+                             <div className="h-2.5 w-2.5 rounded-full bg-green-500" />
+                             <span className="font-medium">Available</span>
+                          </div>
                         </SelectItem>
-                        <SelectItem value="busy">
-                           <span className="flex items-center gap-2">
-                            <span className="h-2.5 w-2.5 rounded-full bg-amber-500 shadow-sm" /> 
-                            <span className="font-medium text-amber-700">Busy</span>
-                          </span>
+                        
+                        <SelectItem value="busy" className="focus:bg-amber-50 focus:text-amber-900 cursor-pointer py-3">
+                           <div className="flex items-center gap-3">
+                             <div className="h-2.5 w-2.5 rounded-full bg-amber-500" />
+                             <span className="font-medium">Busy</span>
+                          </div>
                         </SelectItem>
-                        <SelectItem value="not available">
-                           <span className="flex items-center gap-2">
-                            <span className="h-2.5 w-2.5 rounded-full bg-red-500 shadow-sm" /> 
-                            <span className="font-medium text-red-700">Not Available</span>
-                          </span>
+
+                        <SelectItem value="not available" className="focus:bg-red-50 focus:text-red-900 cursor-pointer py-3">
+                           <div className="flex items-center gap-3">
+                             <div className="h-2.5 w-2.5 rounded-full bg-red-500" />
+                             <span className="font-medium">Not Available</span>
+                          </div>
                         </SelectItem>
                       </SelectContent>
                     </Select>
