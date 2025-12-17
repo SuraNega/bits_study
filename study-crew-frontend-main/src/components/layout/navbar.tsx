@@ -55,7 +55,7 @@ export function Navbar() {
             <img
               src="/bits-logo.png"
               alt="BITS Logo"
-              className="h-8 w-8 sm:h-10 sm:w-10 object-contain transition-transform duration-500 group-hover:rotate-6"
+              className="h-15 w-15 sm:h-14 sm:w-14 object-contain transition-transform duration-500 group-hover:rotate-6"
             />
             <span className="text-lg sm:text-xl font-bold text-[#8fc95d] transition-all duration-300 group-hover:tracking-wide">
               StudyCrew

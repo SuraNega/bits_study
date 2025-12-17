@@ -122,10 +122,10 @@ export default function CourseDetails() {
         {/* Available Assistants */}
         <div>
           <h2 className="text-2xl font-bold text-gray-900 mb-6">
-            Available Assistants ({assistants.length})
+            Available Assistants ({assistants.filter(a => a.id !== user?.id).length})
           </h2>
 
-          {assistants.length === 0 ? (
+          {assistants.filter(a => a.id !== user?.id).length === 0 ? (
             <Card className="p-8 text-center">
               <p className="text-gray-500">
                 No assistants are currently available for this course.
@@ -133,7 +133,7 @@ export default function CourseDetails() {
             </Card>
           ) : (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {assistants.map((assistant) => (
+              {assistants.filter(a => a.id !== user?.id).map((assistant) => (
                 <Card key={assistant.id} className="p-6">
                   <div className="flex items-start justify-between mb-4">
                     <div>
