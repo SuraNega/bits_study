@@ -4,12 +4,12 @@ import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/components/context/AuthContext';
-import { useState, useEffect } from 'react';
-import { User } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { User, Camera, AtSign, Activity, Lock } from 'lucide-react';
 import ChangePasswordModal from './ChangePasswordModal';
 
 const formSchema = z.object({
@@ -28,6 +28,7 @@ export default function ProfileModal() {
   const { user, hasRole, updateUser } = useAuth();
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(user?.profile_picture_url || null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -139,12 +140,18 @@ export default function ProfileModal() {
       // Update user data in context
       updateUser(data);
       setSuccess('Profile updated successfully!');
-      form.reset();
-      // Close modal after 2 seconds
+      
+      // Close modal after 1.5 seconds so user sees success message
       setTimeout(() => {
         setOpen(false);
         setSuccess(null);
-      }, 2000);
+        form.reset({
+            name: data.name || '',
+            telegram_username: data.telegram_username || '',
+            bio: data.bio || '',
+            activity_status: data.activity_status || '',
+          });
+      }, 1500);
     } catch (err: any) {
       setError(err.message || 'Update failed');
     } finally {
@@ -155,64 +162,57 @@ export default function ProfileModal() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger>
-        <Button variant="ghost" size="icon" className="rounded-full overflow-hidden">
+        <Button variant="ghost" size="icon" className="group relative rounded-full overflow-hidden border-2 border-transparent hover:border-[#8fc95d] transition-all duration-300">
           {user?.profile_picture_url ? (
             <img
               src={user.profile_picture_url}
               alt="avatar"
-              className="h-8 w-8 object-cover rounded-full"
+              className="h-8 w-8 object-cover rounded-full transition-transform duration-300 group-hover:scale-110"
             />
           ) : (
-            <User className="h-5 w-5" />
+            <div className="h-8 w-8 bg-gray-100 flex items-center justify-center rounded-full text-gray-500 group-hover:bg-[#8fc95d]/10 group-hover:text-[#8fc95d] transition-colors">
+              <User className="h-5 w-5" />
+            </div>
           )}
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
-        <DialogTitle>Edit Profile</DialogTitle>
+      <DialogContent className="sm:max-w-md border-t-4 border-t-[#8fc95d] gap-6">
+        <div className="flex flex-col space-y-2 text-center items-center">
+          <DialogTitle className="text-2xl font-bold text-center text-[#8fc95d]">Edit Profile</DialogTitle>
+          <DialogDescription className="text-center text-gray-500">
+            Customize how other study crew members see you.
+          </DialogDescription>
+        </div>
+        
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField name="name" control={form.control} render={({ field }) => (
-              <FormItem>
-                <FormLabel>Name</FormLabel>
-                <FormControl>
-                  <Input placeholder="Your Name" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
-            <FormField name="telegram_username" control={form.control} render={({ field }) => (
-              <FormItem>
-                <FormLabel>Telegram Username (Optional)</FormLabel>
-                <FormControl>
-                  <Input placeholder="@yourtelegram" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
-            <FormField name="bio" control={form.control} render={({ field }) => (
-              <FormItem>
-                <FormLabel>Bio (Optional)</FormLabel>
-                <FormControl>
-                  <Textarea placeholder="Tell us about yourself (max 70 characters)" maxLength={70} {...field} />
-                </FormControl>
-                <FormDescription>{remainingChars} characters remaining</FormDescription>
-                <FormMessage />
-              </FormItem>
-            )} />
-            {/* Profile Picture */}
-            <FormItem>
-              <FormLabel>Profile Picture</FormLabel>
-              {previewUrl && (
-                <img
-                  src={previewUrl}
-                  alt="selected avatar"
-                  className="h-20 w-20 rounded-full object-cover mb-2"
-                />
-              )}
-              <FormControl>
-                <Input
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+            {/* Profile Picture Upload */}
+            <div className="flex flex-col items-center justify-center">
+               <div 
+                 className="relative group cursor-pointer" 
+                 onClick={() => fileInputRef.current?.click()}
+                 title="Change profile picture"
+               >
+                 {previewUrl || user?.profile_picture_url ? (
+                   <img
+                     src={previewUrl || user?.profile_picture_url}
+                     alt="Profile"
+                     className="h-24 w-24 rounded-full object-cover border-4 border-white shadow-lg ring-2 ring-gray-100 group-hover:ring-[#8fc95d] transition-all duration-300"
+                   />
+                 ) : (
+                    <div className="h-24 w-24 rounded-full bg-gray-100 flex items-center justify-center border-4 border-white shadow-lg ring-2 ring-gray-100 group-hover:ring-[#8fc95d] transition-all duration-300">
+                      <User className="h-10 w-10 text-gray-400" />
+                    </div>
+                 )}
+                 <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 backdrop-blur-sm">
+                   <Camera className="h-8 w-8 text-white drop-shadow-md" />
+                 </div>
+               </div>
+               <Input
                   type="file"
                   accept="image/*"
+                  className="hidden"
+                  ref={fileInputRef}
                   onChange={(e) => {
                     const file = e.target.files?.[0] || null;
                     setImageFile(file);
@@ -222,35 +222,138 @@ export default function ProfileModal() {
                     }
                   }}
                 />
-              </FormControl>
-            </FormItem>
-            {hasRole('assistant') && (
-              <FormField name="activity_status" control={form.control} render={({ field }) => (
+                <button 
+                  type="button" 
+                  onClick={() => fileInputRef.current?.click()}
+                  className="text-xs text-[#8fc95d] font-medium mt-2 hover:underline focus:outline-none"
+                >
+                  Change Photo
+                </button>
+            </div>
+
+            <div className="grid gap-4">
+              {/* Name Field */}
+              <FormField name="name" control={form.control} render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Activity Status</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select your status" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="available">Available</SelectItem>
-                      <SelectItem value="busy">Busy</SelectItem>
-                      <SelectItem value="not available">Not Available</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <FormLabel className="text-gray-700 font-semibold text-sm">Full Name</FormLabel>
+                   <div className="relative group">
+                      <User className="absolute left-3 top-2.5 h-4 w-4 text-gray-400 group-focus-within:text-[#8fc95d] transition-colors" />
+                      <FormControl>
+                        <Input placeholder="Your Name" {...field} className="pl-10 focus-visible:ring-[#8fc95d] border-gray-200 bg-gray-50/50 hover:bg-white transition-colors" />
+                      </FormControl>
+                   </div>
                   <FormMessage />
                 </FormItem>
               )} />
+
+              {/* Telegram */}
+              <FormField name="telegram_username" control={form.control} render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-gray-700 font-semibold text-sm">Telegram Username</FormLabel>
+                   <div className="relative group">
+                      <AtSign className="absolute left-3 top-2.5 h-4 w-4 text-gray-400 group-focus-within:text-[#8fc95d] transition-colors" />
+                      <FormControl>
+                        <Input placeholder="username" {...field} className="pl-10 focus-visible:ring-[#8fc95d] border-gray-200 bg-gray-50/50 hover:bg-white transition-colors" />
+                      </FormControl>
+                   </div>
+                  <FormMessage />
+                </FormItem>
+              )} />
+              
+               {/* Bio */}
+              <FormField name="bio" control={form.control} render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-gray-700 font-semibold text-sm">Bio</FormLabel>
+                  <FormControl>
+                    <Textarea 
+                      placeholder="Tell us a bit about yourself..." 
+                      className="resize-none focus-visible:ring-[#8fc95d] border-gray-200 bg-gray-50/50 hover:bg-white transition-colors min-h-[80px]" 
+                      maxLength={70} 
+                      {...field} 
+                    />
+                  </FormControl>
+                  <div className="flex justify-end">
+                    <FormDescription className={`text-xs ${remainingChars < 10 ? "text-[#FF0000] font-bold" : "text-gray-400"}`}>
+                      {remainingChars} characters remaining
+                    </FormDescription>
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )} />
+
+              {/* Activity Status (Assistants only) */}
+               {hasRole('assistant') && (
+                <FormField name="activity_status" control={form.control} render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-gray-700 font-semibold text-sm">Availability Status</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="focus:ring-[#8fc95d] border-gray-200 bg-gray-50/50 hover:bg-white">
+                          <div className="flex items-center gap-2">
+                            <Activity className="h-4 w-4 text-gray-500" />
+                            <SelectValue placeholder="Set your status" />
+                          </div>
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="available">
+                          <span className="flex items-center gap-2">
+                            <span className="h-2.5 w-2.5 rounded-full bg-green-500 shadow-sm" /> 
+                            <span className="font-medium text-green-700">Available</span>
+                          </span>
+                        </SelectItem>
+                        <SelectItem value="busy">
+                           <span className="flex items-center gap-2">
+                            <span className="h-2.5 w-2.5 rounded-full bg-amber-500 shadow-sm" /> 
+                            <span className="font-medium text-amber-700">Busy</span>
+                          </span>
+                        </SelectItem>
+                        <SelectItem value="not available">
+                           <span className="flex items-center gap-2">
+                            <span className="h-2.5 w-2.5 rounded-full bg-red-500 shadow-sm" /> 
+                            <span className="font-medium text-red-700">Not Available</span>
+                          </span>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+              )}
+            </div>
+
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm flex items-center animate-in slide-in-from-top-2 fade-in">
+                <span className="mr-2">⚠️</span> {error}
+              </div>
             )}
-            {error && <p className="text-red-500 text-sm">{error}</p>}
-            {success && <p className="text-green-600 text-sm">{success}</p>}
-            <div className="flex space-x-2">
-              <Button type="submit" className="flex-1" disabled={loading}>
-                {loading ? 'Updating...' : 'Update Profile'}
+            
+            {success && (
+               <div className="bg-green-50 border border-green-200 text-green-600 px-4 py-3 rounded-lg text-sm flex items-center animate-in slide-in-from-top-2 fade-in">
+                <span className="mr-2">✅</span> {success}
+              </div>
+            )}
+
+            <div className="flex flex-col sm:flex-row gap-3 pt-2">
+              <Button 
+                type="submit" 
+                className="flex-1 bg-[#8fc95d] hover:bg-[#7ab34b] text-white font-bold shadow-md hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md transition-all duration-200"
+                disabled={loading}
+              >
+                {loading ? (
+                   <span className="flex items-center gap-2">
+                     <div className="h-4 w-4 border-2 border-white/50 border-t-white rounded-full animate-spin" /> 
+                     Saving...
+                   </span>
+                ) : 'Save Changes'}
               </Button>
-              <Button type="button" variant="outline" onClick={() => setChangePasswordOpen(true)}>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => setChangePasswordOpen(true)}
+                className="flex-1 border-2 border-[#8fc95d] text-[#8fc95d] hover:bg-[#8fc95d]/10 font-semibold hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
+              >
+                <Lock className="w-4 h-4 mr-2" />
                 Change Password
               </Button>
             </div>
