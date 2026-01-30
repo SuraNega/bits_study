@@ -9,4 +9,5 @@ class Course < ApplicationRecord
         validates :semester, presence: true
         validates :description, presence: true
         validates :credit_hour, presence: true
+        validates :program, presence: true, inclusion: { in: ['Software Engineering', 'Information Technology and Systems'] }
 end

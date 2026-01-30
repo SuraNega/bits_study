@@ -4,10 +4,11 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/context/AuthContext";
 
 const YEARS = [
-  { label: "Freshman", value: 1 },
-  { label: "Sophomore", value: 2 },
-  { label: "Junior", value: 3 },
-  { label: "Senior", value: 4 },
+  { label: "Year I", value: 1 },
+  { label: "Year II", value: 2 },
+  { label: "Year III", value: 3 },
+  { label: "Year IV", value: 4 },
+  { label: "Year V", value: 5 },
 ];
 const SEMESTERS = ["Semester 1", "Semester 2"];
 
@@ -50,8 +51,8 @@ export default function AssistantDashboard() {
     urlYear && eligibleYears.some((y) => y.value === urlYear)
       ? urlYear
       : eligibleYears.length > 0
-      ? eligibleYears[0].value
-      : null
+        ? eligibleYears[0].value
+        : null
   );
   const [openSemester, setOpenSemester] = useState<string>(
     urlSemester && SEMESTERS.includes(urlSemester) ? urlSemester : SEMESTERS[0]
@@ -65,6 +66,8 @@ export default function AssistantDashboard() {
   const [assignedCourses, setAssignedCourses] = useState<Set<string>>(
     new Set()
   );
+  const [originalAssignedCourses, setOriginalAssignedCourses] = useState<Set<string>>(new Set());
+  const [originalSpecialCourses, setOriginalSpecialCourses] = useState<Set<string>>(new Set());
   const [specialCourses, setSpecialCourses] = useState<Set<string>>(new Set());
   const [hasChanges, setHasChanges] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -120,6 +123,9 @@ export default function AssistantDashboard() {
         setAssignedCourses(new Set(assignedCodes));
         setSelectedCourses(new Set(assignedCodes)); // Initialize selected with assigned
         setSpecialCourses(new Set(specialCodes));
+        // Store original values for cancel functionality
+        setOriginalAssignedCourses(new Set(assignedCodes));
+        setOriginalSpecialCourses(new Set(specialCodes));
       })
       .catch((err) => console.error("Failed to fetch assigned courses:", err));
   }, [user?.id]);
@@ -169,14 +175,12 @@ export default function AssistantDashboard() {
         let message = `Courses updated successfully! Added ${data.added_courses_count} courses, removed ${data.removed_courses_count} courses.`;
 
         if (data.special_added_count > 0) {
-          message += ` Added ${data.special_added_count} special course${
-            data.special_added_count !== 1 ? "s" : ""
-          }.`;
+          message += ` Added ${data.special_added_count} special course${data.special_added_count !== 1 ? "s" : ""
+            }.`;
         }
         if (data.special_removed_count > 0) {
-          message += ` Removed ${data.special_removed_count} special course${
-            data.special_removed_count !== 1 ? "s" : ""
-          }.`;
+          message += ` Removed ${data.special_removed_count} special course${data.special_removed_count !== 1 ? "s" : ""
+            }.`;
         }
 
         // Store message in localStorage before reload
@@ -187,8 +191,7 @@ export default function AssistantDashboard() {
         const errorData = await response.json();
         console.error("Server error:", errorData);
         alert(
-          `Error: ${
-            errorData.error || errorData.errors?.join(", ") || "Unknown error"
+          `Error: ${errorData.error || errorData.errors?.join(", ") || "Unknown error"
           }`
         );
       }
@@ -196,6 +199,13 @@ export default function AssistantDashboard() {
       console.error("Error updating courses:", error);
       alert(`An error occurred while updating courses: ${error.message}`);
     }
+  };
+
+  const handleCancelChanges = () => {
+    // Reset to original values
+    setSelectedCourses(new Set(originalAssignedCourses));
+    setSpecialCourses(new Set(originalSpecialCourses));
+    setHasChanges(false);
   };
 
   return (
@@ -264,11 +274,10 @@ export default function AssistantDashboard() {
                     <div key={year.value} className="space-y-1">
                       <button
                         onClick={() => setOpenYear(year.value)}
-                        className={`w-full text-left px-4 py-3 rounded-lg font-semibold transition-all duration-300 ${
-                          openYear === year.value
-                            ? "bg-gradient-to-r from-green-600 to-green-700 text-white shadow-lg scale-105"
-                            : "bg-gray-50 text-gray-700 hover:bg-green-50 hover:text-green-700 hover:scale-102"
-                        }`}
+                        className={`w-full text-left px-4 py-3 rounded-lg font-semibold transition-all duration-300 ${openYear === year.value
+                          ? "bg-gradient-to-r from-green-600 to-green-700 text-white shadow-lg scale-105"
+                          : "bg-gray-50 text-gray-700 hover:bg-green-50 hover:text-green-700 hover:scale-102"
+                          }`}
                       >
                         <div className="flex items-center justify-between">
                           <span>{year.label}</span>
@@ -294,11 +303,10 @@ export default function AssistantDashboard() {
                             <button
                               key={sem}
                               onClick={() => setOpenSemester(sem)}
-                              className={`w-full text-left px-4 py-2 text-sm rounded-lg transition-all duration-300 ${
-                                openSemester === sem
-                                  ? "bg-green-100 text-green-800 font-semibold shadow-sm"
-                                  : "text-gray-600 hover:bg-gray-50 hover:text-green-700"
-                              }`}
+                              className={`w-full text-left px-4 py-2 text-sm rounded-lg transition-all duration-300 ${openSemester === sem
+                                ? "bg-green-100 text-green-800 font-semibold shadow-sm"
+                                : "text-gray-600 hover:bg-gray-50 hover:text-green-700"
+                                }`}
                             >
                               {sem}
                             </button>
@@ -432,9 +440,9 @@ export default function AssistantDashboard() {
                         .filter(
                           (course) =>
                             course.year ===
-                              YEARS.find((y) => y.value === openYear)?.label &&
+                            YEARS.find((y) => y.value === openYear)?.label &&
                             course.semester ===
-                              SEMESTERS.indexOf(openSemester) + 1 &&
+                            SEMESTERS.indexOf(openSemester) + 1 &&
                             selectedCourses.has(course.code)
                         )
                         .map((course) => (
@@ -521,15 +529,14 @@ export default function AssistantDashboard() {
                     </svg>
                     Available Courses{" "}
                     {Array.from(selectedCourses).length > 0 &&
-                      `(${
-                        courses.filter(
-                          (course) =>
-                            course.year ===
-                              YEARS.find((y) => y.value === openYear)?.label &&
-                            course.semester ===
-                              SEMESTERS.indexOf(openSemester) + 1 &&
-                            !selectedCourses.has(course.code)
-                        ).length
+                      `(${courses.filter(
+                        (course) =>
+                          course.year ===
+                          YEARS.find((y) => y.value === openYear)?.label &&
+                          course.semester ===
+                          SEMESTERS.indexOf(openSemester) + 1 &&
+                          !selectedCourses.has(course.code)
+                      ).length
                       } available)`}
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -537,9 +544,9 @@ export default function AssistantDashboard() {
                       .filter(
                         (course) =>
                           course.year ===
-                            YEARS.find((y) => y.value === openYear)?.label &&
+                          YEARS.find((y) => y.value === openYear)?.label &&
                           course.semester ===
-                            SEMESTERS.indexOf(openSemester) + 1 &&
+                          SEMESTERS.indexOf(openSemester) + 1 &&
                           !selectedCourses.has(course.code)
                       )
                       .map((course) => (
@@ -633,26 +640,48 @@ export default function AssistantDashboard() {
                 </div>
 
                 {hasChanges && (
-                  <Button
-                    onClick={handleUpdateCourses}
-                    className="px-8 py-6 text-base font-semibold bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
-                  >
-                    <svg
-                      className="w-5 h-5 mr-2"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
+                  <div className="flex gap-3">
+                    <Button
+                      onClick={handleCancelChanges}
+                      variant="outline"
+                      className="px-6 py-6 text-base font-semibold border-2 border-gray-300 hover:border-gray-400 text-gray-700 hover:bg-gray-50 shadow-md hover:shadow-lg transition-all duration-300"
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M5 13l4 4L19 7"
-                      />
-                    </svg>
-                    Update Courses ({Array.from(selectedCourses).length}{" "}
-                    selected)
-                  </Button>
+                      <svg
+                        className="w-5 h-5 mr-2"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M6 18L18 6M6 6l12 12"
+                        />
+                      </svg>
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={handleUpdateCourses}
+                      className="px-8 py-6 text-base font-semibold bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+                    >
+                      <svg
+                        className="w-5 h-5 mr-2"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M5 13l4 4L19 7"
+                        />
+                      </svg>
+                      Update Courses ({Array.from(selectedCourses).length}{" "}
+                      selected)
+                    </Button>
+                  </div>
                 )}
               </div>
             </div>

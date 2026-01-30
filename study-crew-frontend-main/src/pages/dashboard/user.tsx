@@ -4,10 +4,11 @@ import { useAuth } from "@/components/context/AuthContext";
 import CourseDetailsModal from "@/components/CourseDetailsModal";
 
 const YEARS = [
-  { label: "Freshman", value: 1 },
-  { label: "Sophomore", value: 2 },
-  { label: "Junior", value: 3 },
-  { label: "Senior", value: 4 },
+  { label: "Year I", value: 1 },
+  { label: "Year II", value: 2 },
+  { label: "Year III", value: 3 },
+  { label: "Year IV", value: 4 },
+  { label: "Year V", value: 5 },
 ];
 const SEMESTERS = ["Semester 1", "Semester 2"];
 
@@ -24,8 +25,8 @@ export default function UserDashboard() {
     urlYear && userEligibleYears.some((y) => y.value === urlYear)
       ? urlYear
       : userEligibleYears.length > 0
-      ? userEligibleYears[0].value
-      : null
+        ? userEligibleYears[0].value
+        : null
   );
 
   const [openSemester, setOpenSemester] = useState<string>(
@@ -148,11 +149,10 @@ export default function UserDashboard() {
                     <div key={year.value} className="space-y-1">
                       <button
                         onClick={() => setOpenYear(year.value)}
-                        className={`w-full text-left px-4 py-3 rounded-lg font-semibold transition-all duration-300 ${
-                          openYear === year.value
+                        className={`w-full text-left px-4 py-3 rounded-lg font-semibold transition-all duration-300 ${openYear === year.value
                             ? "bg-gradient-to-r from-green-600 to-green-700 text-white shadow-lg scale-105"
                             : "bg-gray-50 text-gray-700 hover:bg-green-50 hover:text-green-700 hover:scale-102"
-                        }`}
+                          }`}
                       >
                         <div className="flex items-center justify-between">
                           <span>{year.label}</span>
@@ -178,11 +178,10 @@ export default function UserDashboard() {
                             <button
                               key={sem}
                               onClick={() => setOpenSemester(sem)}
-                              className={`w-full text-left px-4 py-2 text-sm rounded-lg transition-all duration-300 ${
-                                openSemester === sem
+                              className={`w-full text-left px-4 py-2 text-sm rounded-lg transition-all duration-300 ${openSemester === sem
                                   ? "bg-green-100 text-green-800 font-semibold shadow-sm"
                                   : "text-gray-600 hover:bg-gray-50 hover:text-green-700"
-                              }`}
+                                }`}
                             >
                               {sem}
                             </button>

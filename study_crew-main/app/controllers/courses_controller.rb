@@ -7,29 +7,39 @@ class CoursesController < ApplicationController
   def index
     year_param = params[:year]
     semester_param = params[:semester]
+    program_param = params[:program]
 
-    if year_param.present? && semester_param.present?
+    # Start with all courses
+    @courses = Course.all
+
+    # Filter by year if provided
+    if year_param.present?
       year_label = case year_param.to_i
-      when 1 then "Freshman"
-      when 2 then "Sophomore"
-      when 3 then "Junior"
-      when 4 then "Senior"
+      when 1 then "Year I"
+      when 2 then "Year II"
+      when 3 then "Year III"
+      when 4 then "Year IV"
+      when 5 then "Year V"
       else nil
       end
 
+      @courses = @courses.where(year: year_label) if year_label
+    end
+
+    # Filter by semester if provided
+    if semester_param.present?
       semester_num = case semester_param
       when "Semester 1" then 1
       when "Semester 2" then 2
       else nil
       end
 
-      if year_label && semester_num
-        @courses = Course.where(year: year_label, semester: semester_num)
-      else
-        @courses = Course.all
-      end
-    else
-      @courses = Course.all
+      @courses = @courses.where(semester: semester_num) if semester_num
+    end
+
+    # Filter by program if provided
+    if program_param.present?
+      @courses = @courses.where(program: program_param)
     end
 
     render json: @courses
@@ -83,7 +93,7 @@ class CoursesController < ApplicationController
 
   def course_params
     # Adjust permitted params based on the Course model attributes
-    params.require(:course).permit(:name, :code, :year, :semester, :description, :credit_hour)
+    params.require(:course).permit(:name, :code, :year, :semester, :description, :credit_hour, :program)
   end
 
   def authorize_assistant

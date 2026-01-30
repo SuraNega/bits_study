@@ -22,6 +22,7 @@ interface Course {
   semester: number;
   description: string;
   credit_hour: number;
+  program: string;
 }
 
 export default function CourseDetails() {
